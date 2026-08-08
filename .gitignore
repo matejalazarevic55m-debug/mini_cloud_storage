@@ -1,0 +1,27 @@
+# Backend secrets
+backend/.env
+.env
+
+# Python
+backend/venv/
+venv/
+__pycache__/
+*.pyc
+
+# Frontend secrets
+frontend/.env
+
+# Node
+frontend/node_modules/
+node_modules/
+
+# Vite
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

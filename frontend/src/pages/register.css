@@ -1,0 +1,283 @@
+.register-container {
+  width: 100%;
+  min-height: 100vh;
+  background: #7e87b7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-family: Arial, Helvetica, sans-serif;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Dugme za povratak na početnu */
+.register-container .back-home-button {
+  position: absolute;
+  top: 25px;
+  left: 25px;
+
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+
+  border: 1px solid rgba(255, 255, 255, 0.4);
+
+  padding: 10px 20px;
+  border-radius: 20px;
+
+  cursor: pointer;
+  font-weight: 600;
+
+  transition: background 0.2s ease;
+}
+
+.register-container .back-home-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Glavna kartica */
+.register-card {
+  background: #ffffff;
+
+  padding: 40px 30px;
+  border-radius: 20px;
+
+  width: 100%;
+  max-width: 400px;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+  text-align: center;
+  color: #333333;
+}
+
+/* Naslov */
+.register-title {
+  font-family: "font1", sans-serif;
+  font-size: 48px;
+
+  color: #7e87b7;
+
+  margin: 0 0 10px 0;
+}
+
+.register-subtitle {
+  font-size: 15px;
+  color: #666666;
+
+  margin: 0 0 30px 0;
+}
+
+/* Forma */
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Input grupa */
+.register-container .input-group {
+  text-align: left;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.register-container .input-group label {
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #555555;
+}
+
+/* Polja za unos */
+.register-container .input-group input {
+  padding: 12px 16px;
+
+  background-color: #7e87b7;
+  color: #ffffff;
+
+  border: none;
+  border-radius: 10px;
+
+  font-size: 14px;
+
+  outline: none;
+
+  color-scheme: dark;
+
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.register-container .input-group input:focus {
+  background-color: #6b73a3;
+
+  box-shadow:
+    0 0 0 3px rgba(126, 135, 183, 0.18);
+}
+
+.register-container .input-group input::placeholder {
+  color: #d9dbda;
+  opacity: 0.8;
+}
+
+/* Dugme za registraciju */
+.submit-register-button {
+  background: #7e87b7;
+  color: white;
+
+  border: none;
+
+  padding: 14px;
+  border-radius: 30px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  margin-top: 10px;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.submit-register-button:hover:not(:disabled) {
+  background: #6b73a3;
+  transform: scale(1.02);
+}
+
+.submit-register-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+
+/* Error poruka */
+.register-message {
+  margin: -4px 0 0;
+
+  padding: 11px 13px;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.register-message.error {
+  background: #fff0f1;
+  color: #9f3d48;
+
+  border: 1px solid #f2c5ca;
+}
+
+/* Footer */
+.register-footer {
+  margin-top: 30px;
+
+  border-top: 1px solid #eeeeee;
+
+  padding-top: 20px;
+}
+
+.register-footer p {
+  font-size: 14px;
+  color: #666666;
+
+  margin: 0 0 8px 0;
+}
+
+/* Dugme za login */
+.login-redirect-button {
+  background: none;
+  border: none;
+
+  color: #7e87b7;
+
+  font-size: 14px;
+  font-weight: bold;
+
+  cursor: pointer;
+
+  text-decoration: underline;
+}
+
+.login-redirect-button:hover {
+  color: #6b73a3;
+}
+
+/* Ekran nakon uspešne registracije */
+.verification-sent {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+.verification-sent-icon {
+  width: 64px;
+  height: 64px;
+
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  background: #7e87b7;
+  color: #ffffff;
+
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.verification-sent h2 {
+  margin: 4px 0 0;
+
+  color: #333333;
+}
+
+.verification-sent p {
+  margin: 0;
+
+  color: #555555;
+
+  line-height: 1.55;
+}
+
+.verification-sent .verification-note {
+  font-size: 13px;
+
+  color: #777777;
+}
+
+.verification-sent .submit-register-button {
+  width: 100%;
+}
+
+/* Telefon */
+@media (max-width: 500px) {
+  .register-container {
+    padding: 75px 15px 20px;
+  }
+
+  .register-container .back-home-button {
+    top: 20px;
+    left: 15px;
+  }
+
+  .register-card {
+    padding: 32px 22px;
+  }
+
+  .register-title {
+    font-size: 42px;
+  }
+}

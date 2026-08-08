@@ -1,0 +1,70 @@
+Baza mini_cloud_storage                                user za bazu name:storage_user  password:"tvoja_lozinka"
+
+
+
+User
+- user_id
+- username
+- email
+- password_hash
+- created_at
+
+
+Folder
+- folder_id
+- name
+- created_at
+- owner_id
+- parent_id
+- updated_at
+
+
+
+File
+- file_id
+- folder_id
+- owner_id
+- name
+- created_at
+- updated_at
+- size
+- type
+- path
+
+
+FileShare
+- share_id
+- file_id
+- owner_id
+- shared_with_id
+- permission
+- created_at
+
+FolderShare
+- share_id
+- folder_id
+- owner_id
+- shared_with_id
+- permission
+- created_at
+
+
+
+
+POST /auth/register
+→ upisuje usera u bazu sa password_hash
+
+POST /auth/login
+→ proverava email + password
+→ ako je tačno, backend vraća JWT token
+
+GET /files
+→ frontend šalje JWT token
+→ backend iz tokena izvlači user_id
+→ vraća samo fajlove tog korisnika
+
+
+
+
+
+

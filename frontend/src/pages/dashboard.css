@@ -1,0 +1,84 @@
+/* STILOVI ZA ISKAČUĆI PROZOR (MODAL) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4); /* Polu-providna crna pozadina */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000; /* Ispred celog Dashboard-a */
+}
+
+.modal-card {
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 28px; /* Zaobljene ivice kao na novom Google dizajnu */
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.modal-card h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 500;
+  color: #1f1f1f;
+}
+
+.modal-card input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #7e87b7; /* Tvoja prepoznatljiva plavo-ljubičasta boja ivice */
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+  box-sizing: border-box;
+  margin-bottom: 24px;
+}
+
+.modal-card input:focus {
+  border-width: 2px;
+  padding: 11px 15px; /* Sprecava pomeranje teksta zbog deblje ivice */
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modal-cancel-btn {
+  background: none;
+  border: none;
+  color: #7e87b7;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+
+.modal-cancel-btn:hover {
+  background-color: #f1f3f4;
+}
+
+.modal-submit-btn {
+  background-color: #7e87b7; /* Tvoja boja za glavno dugme */
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 20px;
+  box-shadow: 0px 1px 2px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+}
+
+.modal-submit-btn:hover {
+  background-color: #6b73a3;
+}

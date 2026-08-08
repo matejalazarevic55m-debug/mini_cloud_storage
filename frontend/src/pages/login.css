@@ -1,0 +1,398 @@
+.login-container {
+  width: 100%;
+  min-height: 100vh;
+  background: #7e87b7;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+
+  font-family: Arial, Helvetica, sans-serif;
+
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Dugme za povratak na početnu */
+.login-container .back-home-button {
+  position: absolute;
+  top: 25px;
+  left: 25px;
+
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+
+  border: 1px solid rgba(255, 255, 255, 0.4);
+
+  padding: 10px 20px;
+  border-radius: 20px;
+
+  cursor: pointer;
+  font-weight: 600;
+
+  transition: background 0.2s ease;
+}
+
+.login-container .back-home-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Bela kartica */
+.login-card {
+  background: #ffffff;
+
+  padding: 40px 30px;
+
+  border-radius: 20px;
+
+  width: 100%;
+  max-width: 400px;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+  text-align: center;
+
+  color: #333333;
+}
+
+/* Naslov */
+.login-title {
+  font-family: "font1", sans-serif;
+
+  font-size: 48px;
+
+  color: #7e87b7;
+
+  margin: 0 0 10px 0;
+}
+
+/* Podnaslov */
+.login-subtitle {
+  font-size: 15px;
+
+  color: #666666;
+
+  margin: 0 0 30px 0;
+}
+
+/* Forma */
+.login-form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 20px;
+}
+
+/* Input grupa */
+.login-container .input-group {
+  text-align: left;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.login-container .input-group label {
+  font-size: 15px;
+  font-weight: 600;
+
+  color: #555555;
+}
+
+/* Input polja */
+.login-container .input-group input {
+  padding: 12px 16px;
+
+  background-color: #7e87b7;
+  color: #ffffff;
+
+  border: none;
+  border-radius: 10px;
+
+  font-size: 14px;
+
+  outline: none;
+
+  color-scheme: dark;
+
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.login-container .input-group input:focus {
+  background-color: #6b73a3;
+
+  box-shadow:
+    0 0 0 3px rgba(126, 135, 183, 0.18);
+}
+
+.login-container .input-group input::placeholder {
+  color: #d9dbda;
+  opacity: 0.8;
+}
+
+/* Error poruka */
+.login-container .login-message.error {
+  display: block;
+  width: 100%;
+
+  box-sizing: border-box;
+
+  margin: 0;
+  padding: 11px 13px;
+
+  background: #fff0f1;
+  color: #9f3d48;
+
+  border: 1px solid #f2c5ca;
+  border-radius: 10px;
+
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+
+  text-align: center;
+}
+
+/* Dugme Uloguj me / Pošalji reset link */
+.login-container .submit-login-button {
+  width: 100%;
+
+  background: #7e87b7;
+  color: white;
+
+  border: none;
+
+  padding: 14px;
+
+  border-radius: 30px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  margin-top: 10px;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.login-container .submit-login-button:hover:not(:disabled) {
+  background: #6b73a3;
+
+  transform: scale(1.02);
+}
+
+.login-container .submit-login-button:disabled {
+  opacity: 0.65;
+
+  cursor: wait;
+
+  transform: none;
+}
+
+/* Zaboravljena lozinka */
+.login-container .forgot-password-button {
+  align-self: flex-end;
+
+  width: auto;
+
+  margin-top: -8px;
+  padding: 0;
+
+  background: transparent;
+  color: #7e87b7;
+
+  border: none;
+  border-radius: 0;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: none;
+
+  text-decoration: none;
+
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.login-container .forgot-password-button:hover {
+  background: transparent;
+
+  color: #6b73a3;
+
+  text-decoration: underline;
+
+  transform: none;
+  box-shadow: none;
+}
+
+/* Tekst u reset formi */
+.login-container .forgot-password-info {
+  margin: 0 0 5px 0;
+
+  font-size: 14px;
+  line-height: 1.55;
+
+  color: #666666;
+
+  text-align: center;
+}
+
+/* Nazad na login */
+.login-container .back-to-login-button {
+  background: transparent;
+
+  border: none;
+
+  color: #7e87b7;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  margin-top: -5px;
+
+  padding: 8px;
+
+  box-shadow: none;
+
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.login-container .back-to-login-button:hover {
+  background: transparent;
+
+  color: #6b73a3;
+
+  text-decoration: underline;
+
+  transform: none;
+}
+
+/* Poruka nakon slanja reset linka */
+.forgot-success {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+.forgot-success-icon {
+  width: 64px;
+  height: 64px;
+
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  background: #7e87b7;
+
+  color: #ffffff;
+
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.forgot-success h2 {
+  margin: 4px 0 0;
+
+  color: #333333;
+}
+
+.forgot-success p {
+  margin: 0;
+
+  color: #555555;
+
+  line-height: 1.55;
+}
+
+.forgot-password-note {
+  font-size: 13px;
+
+  color: #777777;
+}
+
+.forgot-success .submit-login-button {
+  margin-top: 10px;
+}
+
+/* Footer */
+.login-footer {
+  margin-top: 30px;
+
+  border-top: 1px solid #eeeeee;
+
+  padding-top: 20px;
+}
+
+.login-footer p {
+  font-size: 14px;
+
+  color: #666666;
+
+  margin: 0 0 8px 0;
+}
+
+/* Link za registraciju */
+.login-container .register-redirect-button {
+  background: transparent;
+
+  border: none;
+
+  color: #7e87b7;
+
+  font-size: 14px;
+  font-weight: bold;
+
+  cursor: pointer;
+
+  text-decoration: underline;
+
+  box-shadow: none;
+}
+
+.login-container .register-redirect-button:hover {
+  background: transparent;
+
+  color: #6b73a3;
+}
+
+/* Telefon */
+@media (max-width: 500px) {
+  .login-container {
+    padding: 75px 15px 20px;
+  }
+
+  .login-container .back-home-button {
+    top: 20px;
+    left: 15px;
+  }
+
+  .login-card {
+    padding: 32px 22px;
+  }
+
+  .login-title {
+    font-size: 42px;
+  }
+
+  .login-container .forgot-password-button {
+    font-size: 12px;
+  }
+}
