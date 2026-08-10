@@ -39,6 +39,8 @@ export default function Login({
           "Content-Type": "application/json",
         },
 
+        credentials: "include",
+
         body: JSON.stringify({
           email: cleanEmail,
           password,

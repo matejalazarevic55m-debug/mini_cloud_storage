@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
+
 
 class Folder(Base):
     __tablename__ = "folders"
@@ -13,6 +14,9 @@ class Folder(Base):
 
     owner_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     parent_id = Column(Integer, ForeignKey("folders.folder_id"), nullable=True)
+
+    is_starred = Column(Boolean, nullable=False, default=False, server_default="false")
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     owner = relationship("User", back_populates="folders")
     parent = relationship("Folder", remote_side=[folder_id], backref="subfolders")

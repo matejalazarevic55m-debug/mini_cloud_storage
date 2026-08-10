@@ -2,14 +2,16 @@
 backend/.env
 .env
 
+# Frontend secrets
+frontend/.env
+
 # Python
 backend/venv/
 venv/
 __pycache__/
-*.pyc
 
-# Frontend secrets
-frontend/.env
+# Storio uploaded files
+storage/
 
 # Node
 frontend/node_modules/
@@ -25,3 +27,5 @@ frontend/dist/
 # OS
 .DS_Store
 Thumbs.db
+backend i frontend nov.zip
+.gitignore.save
