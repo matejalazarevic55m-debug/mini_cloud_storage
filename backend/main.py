@@ -3,6 +3,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -177,6 +178,26 @@ class ResetPasswordRequest(BaseModel):
     )
 
 
+class DeleteAccountRequest(BaseModel):
+    confirmation: str = Field(
+        min_length=1,
+        max_length=20,
+    )
+
+
+class UpdateUsernameRequest(BaseModel):
+    username: str = Field(
+        min_length=3,
+        max_length=50,
+    )
+
+
+class ShareRequest(BaseModel):
+    recipient: str = Field(
+        min_length=3,
+        max_length=320,
+    )
+
 
 class CreateFolderRequest(BaseModel):
     name: str = Field(
@@ -217,11 +238,15 @@ class UploadInitRequest(BaseModel):
 # JWT / AUTH FUNKCIJE
 # ---------------------------------------------------------
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(
+    user_id: int,
+    session_version: int,
+) -> str:
     now = datetime.now(timezone.utc)
 
     payload = {
         "sub": str(user_id),
+        "sv": int(session_version),
         "iat": now,
         "exp": now + timedelta(days=JWT_EXPIRE_DAYS),
     }
@@ -255,14 +280,16 @@ def get_current_user(
         )
 
         user_id = payload.get("sub")
+        token_session_version = payload.get("sv")
 
-        if user_id is None:
+        if user_id is None or token_session_version is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Nevažeća sesija.",
             )
 
         user_id = int(user_id)
+        token_session_version = int(token_session_version)
 
     except HTTPException:
         raise
@@ -291,6 +318,12 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email nije verifikovan.",
+        )
+
+    if token_session_version != int(user.session_version or 0):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sesija više nije važeća. Prijavi se ponovo.",
         )
 
     return user
@@ -797,6 +830,473 @@ def _reserved_upload_bytes(
 
 
 # ---------------------------------------------------------
+# STORIO DELJENJE - POMOĆNE FUNKCIJE
+# ---------------------------------------------------------
+
+def _share_asset_column(model, asset_name: str):
+    column = getattr(
+        model,
+        asset_name,
+        None,
+    )
+
+    if column is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Share model nije pravilno podešen.",
+        )
+
+    return column
+
+
+def _share_user_fk_columns(model) -> list:
+    columns = []
+
+    for column in model.__table__.columns:
+        references_user = any(
+            foreign_key.column.table.name
+            == User.__tablename__
+            and foreign_key.column.name
+            == "user_id"
+            for foreign_key in column.foreign_keys
+        )
+
+        if references_user:
+            columns.append(column)
+
+    return columns
+
+
+def _share_recipient_column(model):
+    candidates = (
+        "shared_with_user_id",
+        "recipient_user_id",
+        "recipient_id",
+        "shared_user_id",
+        "target_user_id",
+        "user_id",
+    )
+
+    for name in candidates:
+        column = getattr(
+            model,
+            name,
+            None,
+        )
+
+        if column is not None:
+            return column
+
+    user_columns = _share_user_fk_columns(
+        model
+    )
+
+    for column in user_columns:
+        lowered = column.name.lower()
+
+        if (
+            "recipient" in lowered
+            or "shared_with" in lowered
+            or "target" in lowered
+        ):
+            return getattr(
+                model,
+                column.name,
+            )
+
+    if len(user_columns) == 1:
+        return getattr(
+            model,
+            user_columns[0].name,
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=(
+            "Ne mogu da odredim primaoca u share modelu."
+        ),
+    )
+
+
+def _create_share_row(
+    model,
+    asset_name: str,
+    asset_id: int,
+    owner_user_id: int,
+    recipient_user_id: int,
+):
+    asset_column = _share_asset_column(
+        model,
+        asset_name,
+    )
+    recipient_column = _share_recipient_column(
+        model
+    )
+
+    values = {
+        asset_column.key: asset_id,
+        recipient_column.key: recipient_user_id,
+    }
+
+    for column in model.__table__.columns:
+        if column.name in values:
+            continue
+
+        if column.primary_key and (
+            column.autoincrement is True
+            or column.autoincrement == "auto"
+        ):
+            continue
+
+        if (
+            column.nullable
+            or column.default is not None
+            or column.server_default is not None
+        ):
+            continue
+
+        lowered = column.name.lower()
+
+        references_user = any(
+            foreign_key.column.table.name
+            == User.__tablename__
+            and foreign_key.column.name
+            == "user_id"
+            for foreign_key in column.foreign_keys
+        )
+
+        if references_user and (
+            "owner" in lowered
+            or "shared_by" in lowered
+            or "sender" in lowered
+            or "creator" in lowered
+            or "from_user" in lowered
+        ):
+            values[column.name] = owner_user_id
+            continue
+
+        if lowered in (
+            "permission",
+            "access",
+            "access_level",
+            "role",
+        ):
+            values[column.name] = "view"
+            continue
+
+        if lowered.startswith("can_"):
+            values[column.name] = False
+            continue
+
+        if "created_at" in lowered:
+            values[column.name] = datetime.now(
+                timezone.utc
+            )
+            continue
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "Share model sadrži obavezno polje "
+                f"'{column.name}' koje Storio ne prepoznaje."
+            ),
+        )
+
+    return model(**values)
+
+
+def _find_share_recipient(
+    db: Session,
+    recipient: str,
+) -> User:
+    value = recipient.strip().lower()
+
+    target = (
+        db.query(User)
+        .filter(
+            or_(
+                func.lower(User.email) == value,
+                func.lower(User.username) == value,
+            )
+        )
+        .first()
+    )
+
+    if not target:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "Storio korisnik sa tim korisničkim "
+                "imenom ili emailom ne postoji."
+            ),
+        )
+
+    if not target.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Primalac još nije verifikovao nalog.",
+        )
+
+    return target
+
+
+def _share_exists(
+    db: Session,
+    model,
+    asset_name: str,
+    asset_id: int,
+    recipient_user_id: int,
+) -> bool:
+    asset_column = _share_asset_column(
+        model,
+        asset_name,
+    )
+    recipient_column = _share_recipient_column(
+        model
+    )
+
+    return (
+        db.query(model)
+        .filter(
+            asset_column == asset_id,
+            recipient_column == recipient_user_id,
+        )
+        .first()
+        is not None
+    )
+
+
+def _shared_folder_access_root(
+    db: Session,
+    recipient_user_id: int,
+    folder_id: int,
+) -> Folder | None:
+    recipient_column = _share_recipient_column(
+        FolderShare
+    )
+
+    shared_root_ids = [
+        root_id
+        for (root_id,) in (
+            db.query(FolderShare.folder_id)
+            .filter(
+                recipient_column
+                == recipient_user_id
+            )
+            .all()
+        )
+    ]
+
+    if not shared_root_ids:
+        return None
+
+    current = (
+        db.query(Folder)
+        .filter(
+            Folder.folder_id == folder_id,
+            Folder.deleted_at.is_(None),
+        )
+        .first()
+    )
+
+    visited: set[int] = set()
+
+    while current is not None:
+        if current.folder_id in visited:
+            return None
+
+        visited.add(current.folder_id)
+
+        if current.deleted_at is not None:
+            return None
+
+        if current.folder_id in shared_root_ids:
+            return current
+
+        if current.parent_id is None:
+            return None
+
+        current = (
+            db.query(Folder)
+            .filter(
+                Folder.folder_id == current.parent_id,
+                Folder.owner_id == current.owner_id,
+                Folder.deleted_at.is_(None),
+            )
+            .first()
+        )
+
+    return None
+
+
+def _shared_file_access_allowed(
+    db: Session,
+    recipient_user_id: int,
+    file_record: File,
+) -> bool:
+    if file_record.deleted_at is not None:
+        return False
+
+    if _share_exists(
+        db,
+        FileShare,
+        "file_id",
+        file_record.file_id,
+        recipient_user_id,
+    ):
+        return True
+
+    if file_record.folder_id is None:
+        return False
+
+    return (
+        _shared_folder_access_root(
+            db,
+            recipient_user_id,
+            file_record.folder_id,
+        )
+        is not None
+    )
+
+
+def _serialize_shared_folder(
+    folder: Folder,
+    db: Session,
+    shared_root: bool = False,
+) -> dict:
+    data = _serialize_folder(folder)
+
+    owner = (
+        db.query(User)
+        .filter(
+            User.user_id == folder.owner_id
+        )
+        .first()
+    )
+
+    data.update({
+        "shared": True,
+        "shared_root": shared_root,
+        "shared_by_username": (
+            owner.username
+            if owner
+            else "Storio korisnik"
+        ),
+        "shared_by_email": (
+            owner.email
+            if owner
+            else None
+        ),
+    })
+
+    return data
+
+
+def _serialize_shared_file(
+    file_record: File,
+    db: Session,
+) -> dict:
+    data = _serialize_file(file_record)
+
+    owner = (
+        db.query(User)
+        .filter(
+            User.user_id == file_record.owner_id
+        )
+        .first()
+    )
+
+    data.update({
+        "shared": True,
+        "shared_by_username": (
+            owner.username
+            if owner
+            else "Storio korisnik"
+        ),
+        "shared_by_email": (
+            owner.email
+            if owner
+            else None
+        ),
+    })
+
+    return data
+
+
+# ---------------------------------------------------------
+# PROFIL - POMOĆNE FUNKCIJE
+# ---------------------------------------------------------
+
+AVATAR_MAX_BYTES = 5 * 1024 * 1024
+
+AVATAR_EXTENSIONS = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
+
+AVATAR_MEDIA_TYPES = {
+    ".jpg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
+
+
+def _profile_dir(user_id: int) -> Path:
+    path = (
+        STORAGE_ROOT
+        / str(user_id)
+        / ".profile"
+    ).resolve()
+
+    try:
+        path.relative_to(STORAGE_ROOT)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nevažeća profilna putanja.",
+        )
+
+    return path
+
+
+def _find_avatar_file(user_id: int) -> Path | None:
+    profile_dir = _profile_dir(user_id)
+
+    if not profile_dir.is_dir():
+        return None
+
+    for extension in AVATAR_MEDIA_TYPES:
+        candidate = profile_dir / f"avatar{extension}"
+
+        if candidate.is_file():
+            return candidate
+
+    return None
+
+
+def _profile_payload(user: User) -> dict:
+    avatar_file = _find_avatar_file(user.user_id)
+
+    return {
+        "user_id": user.user_id,
+        "username": user.username,
+        "email": user.email,
+        "is_verified": bool(user.is_verified),
+        "created_at": (
+            user.created_at.isoformat()
+            if user.created_at
+            else None
+        ),
+        "avatar_url": (
+            "/auth/profile/avatar"
+            if avatar_file
+            else None
+        ),
+    }
+
+
+# ---------------------------------------------------------
 # TEST RUTA
 # ---------------------------------------------------------
 
@@ -867,6 +1367,7 @@ def register_user(
         username=username,
         email=email,
         password_hash=password_hash,
+        session_version=0,
         is_verified=False,
         verification_token=token_hash,
         verification_token_expires_at=(
@@ -970,7 +1471,8 @@ def login_user(
         )
 
     access_token = create_access_token(
-        user.user_id
+        user.user_id,
+        int(user.session_version or 0),
     )
 
     response.set_cookie(
@@ -985,11 +1487,7 @@ def login_user(
 
     return {
         "message": "Uspešna prijava.",
-        "user": {
-            "user_id": user.user_id,
-            "username": user.username,
-            "email": user.email,
-        },
+        "user": _profile_payload(user),
     }
 
 
@@ -1002,11 +1500,210 @@ def auth_me(
     user: User = Depends(get_current_user),
 ):
     return {
-        "user": {
-            "user_id": user.user_id,
-            "username": user.username,
-            "email": user.email,
-        }
+        "user": _profile_payload(user)
+    }
+
+
+# ---------------------------------------------------------
+# PROFIL - KORISNIČKO IME
+# ---------------------------------------------------------
+
+@app.patch("/auth/profile/username")
+def update_profile_username(
+    data: UpdateUsernameRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    username = data.username.strip()
+
+    if len(username) < 3:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Korisničko ime mora imati najmanje 3 karaktera.",
+        )
+
+    existing_user = (
+        db.query(User)
+        .filter(
+            User.user_id != user.user_id,
+            func.lower(User.username) == username.lower(),
+        )
+        .first()
+    )
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="To korisničko ime je već zauzeto.",
+        )
+
+    user.username = username
+
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "message": "Korisničko ime je promenjeno.",
+        "user": _profile_payload(user),
+    }
+
+
+# ---------------------------------------------------------
+# PROFIL - PROFILNA SLIKA
+# ---------------------------------------------------------
+
+@app.get("/auth/profile/avatar")
+def get_profile_avatar(
+    user: User = Depends(get_current_user),
+):
+    avatar_file = _find_avatar_file(user.user_id)
+
+    if not avatar_file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profilna slika nije postavljena.",
+        )
+
+    return FileResponse(
+        path=avatar_file,
+        media_type=AVATAR_MEDIA_TYPES.get(
+            avatar_file.suffix.lower(),
+            "application/octet-stream",
+        ),
+        headers={
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@app.post("/auth/profile/avatar")
+async def update_profile_avatar(
+    avatar: UploadFile = FastAPIFile(...),
+    user: User = Depends(get_current_user),
+):
+    content_type = (
+        avatar.content_type
+        or ""
+    ).lower()
+
+    extension = AVATAR_EXTENSIONS.get(
+        content_type
+    )
+
+    if not extension:
+        await avatar.close()
+
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Profilna slika mora biti JPG, PNG ili WEBP.",
+        )
+
+    profile_dir = _profile_dir(
+        user.user_id
+    )
+
+    profile_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    temp_path = (
+        profile_dir
+        / f".avatar-{uuid4().hex}.tmp"
+    )
+
+    written_bytes = 0
+
+    try:
+        with temp_path.open("wb") as target:
+            while True:
+                chunk = await avatar.read(
+                    1024 * 1024
+                )
+
+                if not chunk:
+                    break
+
+                written_bytes += len(chunk)
+
+                if written_bytes > AVATAR_MAX_BYTES:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail="Profilna slika može imati najviše 5 MB.",
+                    )
+
+                target.write(chunk)
+
+        if written_bytes == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Profilna slika je prazna.",
+            )
+
+        for old_extension in AVATAR_MEDIA_TYPES:
+            old_path = (
+                profile_dir
+                / f"avatar{old_extension}"
+            )
+
+            try:
+                old_path.unlink(
+                    missing_ok=True
+                )
+            except OSError:
+                pass
+
+        final_path = (
+            profile_dir
+            / f"avatar{extension}"
+        )
+
+        os.replace(
+            temp_path,
+            final_path,
+        )
+
+    except Exception:
+        try:
+            temp_path.unlink(
+                missing_ok=True
+            )
+        except OSError:
+            pass
+
+        raise
+
+    finally:
+        await avatar.close()
+
+    return {
+        "message": "Profilna slika je promenjena.",
+        "user": _profile_payload(user),
+    }
+
+
+@app.delete("/auth/profile/avatar")
+def delete_profile_avatar(
+    user: User = Depends(get_current_user),
+):
+    avatar_file = _find_avatar_file(
+        user.user_id
+    )
+
+    if avatar_file:
+        try:
+            avatar_file.unlink(
+                missing_ok=True
+            )
+        except OSError:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Profilna slika nije mogla da bude obrisana.",
+            )
+
+    return {
+        "message": "Profilna slika je uklonjena.",
+        "user": _profile_payload(user),
     }
 
 
@@ -1028,6 +1725,214 @@ def logout_user(
 
     return {
         "message": "Uspešno ste se odjavili."
+    }
+
+
+# ---------------------------------------------------------
+# ODJAVA SA SVIH UREĐAJA
+# ---------------------------------------------------------
+
+@app.post("/auth/logout-all")
+def logout_all_devices(
+    response: Response,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user.session_version = int(user.session_version or 0) + 1
+
+    db.commit()
+
+    response.delete_cookie(
+        key=AUTH_COOKIE_NAME,
+        path="/",
+        secure=COOKIE_SECURE,
+        httponly=True,
+        samesite="lax",
+    )
+
+    return {
+        "message": "Odjavljen si sa svih uređaja."
+    }
+
+
+# ---------------------------------------------------------
+# BRISANJE NALOGA
+# ---------------------------------------------------------
+
+@app.delete("/auth/delete-account")
+def delete_account(
+    data: DeleteAccountRequest,
+    response: Response,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if data.confirmation.strip() != "OBRISI":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Za potvrdu upiši tačno "OBRISI".',
+        )
+
+    user_id = user.user_id
+
+    file_ids = [
+        file_id
+        for (file_id,) in (
+            db.query(File.file_id)
+            .filter(File.owner_id == user_id)
+            .all()
+        )
+    ]
+
+    folder_ids = [
+        folder_id
+        for (folder_id,) in (
+            db.query(Folder.folder_id)
+            .filter(Folder.owner_id == user_id)
+            .all()
+        )
+    ]
+
+    def delete_related_share_rows(
+        model,
+        asset_column_name: str,
+        asset_ids: list[int],
+    ) -> None:
+        conditions = []
+
+        asset_column = getattr(
+            model,
+            asset_column_name,
+            None,
+        )
+
+        if asset_column is not None and asset_ids:
+            conditions.append(
+                asset_column.in_(asset_ids)
+            )
+
+        # Brišemo i share zapise u kojima je korisnik direktno
+        # naveden preko bilo kog FK-a ka users.user_id.
+        for column in model.__table__.columns:
+            references_user = any(
+                foreign_key.column.table.name
+                == User.__tablename__
+                and foreign_key.column.name
+                == "user_id"
+                for foreign_key in column.foreign_keys
+            )
+
+            if references_user:
+                conditions.append(
+                    getattr(model, column.name)
+                    == user_id
+                )
+
+        if conditions:
+            (
+                db.query(model)
+                .filter(or_(*conditions))
+                .delete(
+                    synchronize_session=False
+                )
+            )
+
+    user_storage_dir = (
+        STORAGE_ROOT / str(user_id)
+    ).resolve()
+
+    user_upload_dir = (
+        UPLOAD_ROOT / str(user_id)
+    ).resolve()
+
+    try:
+        delete_related_share_rows(
+            FileShare,
+            "file_id",
+            file_ids,
+        )
+
+        delete_related_share_rows(
+            FolderShare,
+            "folder_id",
+            folder_ids,
+        )
+
+        if file_ids:
+            (
+                db.query(File)
+                .filter(
+                    File.file_id.in_(file_ids)
+                )
+                .delete(
+                    synchronize_session=False
+                )
+            )
+
+        if folder_ids:
+            (
+                db.query(Folder)
+                .filter(
+                    Folder.folder_id.in_(folder_ids)
+                )
+                .delete(
+                    synchronize_session=False
+                )
+            )
+
+        deleted_users = (
+            db.query(User)
+            .filter(
+                User.user_id == user_id
+            )
+            .delete(
+                synchronize_session=False
+            )
+        )
+
+        if deleted_users != 1:
+            raise RuntimeError(
+                "Nalog nije mogao da bude obrisan."
+            )
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+    # Baza je uspešno obrisana. Tek sada brišemo fizičke fajlove.
+    for directory, allowed_root in (
+        (user_storage_dir, STORAGE_ROOT),
+        (user_upload_dir, UPLOAD_ROOT),
+    ):
+        try:
+            directory.relative_to(
+                allowed_root
+            )
+
+            if directory.exists():
+                shutil.rmtree(
+                    directory
+                )
+
+        except (OSError, ValueError) as exc:
+            print(
+                "Greška pri brisanju korisničkih fajlova:",
+                exc,
+            )
+
+    response.delete_cookie(
+        key=AUTH_COOKIE_NAME,
+        path="/",
+        secure=COOKIE_SECURE,
+        httponly=True,
+        samesite="lax",
+    )
+
+    return {
+        "message": (
+            "Nalog i svi njegovi podaci su trajno obrisani."
+        )
     }
 
 
@@ -1269,6 +2174,9 @@ def reset_password(
     user.reset_password_token = None
     user.reset_password_token_expires_at = None
 
+    # Promena lozinke invalidira sve postojeće sesije.
+    user.session_version = int(user.session_version or 0) + 1
+
     db.commit()
 
     return {
@@ -1277,6 +2185,470 @@ def reset_password(
         )
     }
 
+
+
+# ---------------------------------------------------------
+# STORIO DELJENJE - DELI FAJL
+# ---------------------------------------------------------
+
+@app.post("/shares/files/{file_id}")
+def share_file_with_user(
+    file_id: int,
+    data: ShareRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    file_record = _get_owned_file(
+        db,
+        user,
+        file_id,
+    )
+
+    if file_record.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Fajl u Otpadu ne može da se deli.",
+        )
+
+    recipient = _find_share_recipient(
+        db,
+        data.recipient,
+    )
+
+    if recipient.user_id == user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ne možeš da deliš fajl samom sebi.",
+        )
+
+    if _share_exists(
+        db,
+        FileShare,
+        "file_id",
+        file_id,
+        recipient.user_id,
+    ):
+        return {
+            "message": (
+                f'Fajl je već podeljen sa korisnikom '
+                f'"{recipient.username}".'
+            )
+        }
+
+    share_row = _create_share_row(
+        FileShare,
+        "file_id",
+        file_id,
+        user.user_id,
+        recipient.user_id,
+    )
+
+    db.add(share_row)
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "message": (
+            f'Fajl je podeljen sa korisnikom '
+            f'"{recipient.username}".'
+        )
+    }
+
+
+# ---------------------------------------------------------
+# STORIO DELJENJE - DELI FOLDER
+# ---------------------------------------------------------
+
+@app.post("/shares/folders/{folder_id}")
+def share_folder_with_user(
+    folder_id: int,
+    data: ShareRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    folder = _get_owned_folder(
+        db,
+        user,
+        folder_id,
+    )
+
+    if folder.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Folder u Otpadu ne može da se deli.",
+        )
+
+    recipient = _find_share_recipient(
+        db,
+        data.recipient,
+    )
+
+    if recipient.user_id == user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ne možeš da deliš folder samom sebi.",
+        )
+
+    if _share_exists(
+        db,
+        FolderShare,
+        "folder_id",
+        folder_id,
+        recipient.user_id,
+    ):
+        return {
+            "message": (
+                f'Folder je već podeljen sa korisnikom '
+                f'"{recipient.username}".'
+            )
+        }
+
+    share_row = _create_share_row(
+        FolderShare,
+        "folder_id",
+        folder_id,
+        user.user_id,
+        recipient.user_id,
+    )
+
+    db.add(share_row)
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "message": (
+            f'Folder je podeljen sa korisnikom '
+            f'"{recipient.username}".'
+        )
+    }
+
+
+# ---------------------------------------------------------
+# STORIO DELJENJE - PRIMLJENE STAVKE
+# ---------------------------------------------------------
+
+@app.get("/shares/received")
+def received_shares(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    file_recipient_column = _share_recipient_column(
+        FileShare
+    )
+    folder_recipient_column = _share_recipient_column(
+        FolderShare
+    )
+
+    file_ids = [
+        file_id
+        for (file_id,) in (
+            db.query(FileShare.file_id)
+            .filter(
+                file_recipient_column == user.user_id
+            )
+            .all()
+        )
+    ]
+
+    folder_ids = [
+        folder_id
+        for (folder_id,) in (
+            db.query(FolderShare.folder_id)
+            .filter(
+                folder_recipient_column == user.user_id
+            )
+            .all()
+        )
+    ]
+
+    files = []
+
+    if file_ids:
+        files = (
+            db.query(File)
+            .filter(
+                File.file_id.in_(file_ids),
+                File.deleted_at.is_(None),
+            )
+            .order_by(File.created_at.desc())
+            .all()
+        )
+
+    folders = []
+
+    if folder_ids:
+        folders = (
+            db.query(Folder)
+            .filter(
+                Folder.folder_id.in_(folder_ids),
+                Folder.deleted_at.is_(None),
+            )
+            .order_by(Folder.name.asc())
+            .all()
+        )
+
+    return {
+        "folders": [
+            _serialize_shared_folder(
+                folder,
+                db,
+                shared_root=True,
+            )
+            for folder in folders
+        ],
+        "files": [
+            _serialize_shared_file(
+                file_record,
+                db,
+            )
+            for file_record in files
+        ],
+        "current_folder": None,
+        "breadcrumbs": [],
+    }
+
+
+# ---------------------------------------------------------
+# STORIO DELJENJE - SADRŽAJ DELJENOG FOLDERA
+# ---------------------------------------------------------
+
+@app.get("/shares/folders/{folder_id}/items")
+def shared_folder_items(
+    folder_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    folder = (
+        db.query(Folder)
+        .filter(
+            Folder.folder_id == folder_id,
+            Folder.deleted_at.is_(None),
+        )
+        .first()
+    )
+
+    if not folder:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Deljeni folder nije pronađen.",
+        )
+
+    shared_root = _shared_folder_access_root(
+        db,
+        user.user_id,
+        folder.folder_id,
+    )
+
+    if shared_root is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Nemaš pristup ovom folderu.",
+        )
+
+    folders = (
+        db.query(Folder)
+        .filter(
+            Folder.owner_id == folder.owner_id,
+            Folder.parent_id == folder.folder_id,
+            Folder.deleted_at.is_(None),
+        )
+        .order_by(Folder.name.asc())
+        .all()
+    )
+
+    files = (
+        db.query(File)
+        .filter(
+            File.owner_id == folder.owner_id,
+            File.folder_id == folder.folder_id,
+            File.deleted_at.is_(None),
+        )
+        .order_by(File.created_at.desc())
+        .all()
+    )
+
+    chain = []
+    current = folder
+    visited: set[int] = set()
+
+    while current is not None:
+        if current.folder_id in visited:
+            break
+
+        visited.add(current.folder_id)
+        chain.append(current)
+
+        if current.folder_id == shared_root.folder_id:
+            break
+
+        if current.parent_id is None:
+            break
+
+        current = (
+            db.query(Folder)
+            .filter(
+                Folder.folder_id == current.parent_id,
+                Folder.owner_id == folder.owner_id,
+                Folder.deleted_at.is_(None),
+            )
+            .first()
+        )
+
+    chain.reverse()
+
+    breadcrumbs = [
+        {
+            "folder_id": item.folder_id,
+            "name": item.name,
+        }
+        for item in chain
+    ]
+
+    return {
+        "folders": [
+            _serialize_shared_folder(
+                item,
+                db,
+            )
+            for item in folders
+        ],
+        "files": [
+            _serialize_shared_file(
+                item,
+                db,
+            )
+            for item in files
+        ],
+        "current_folder": _serialize_shared_folder(
+            folder,
+            db,
+            shared_root=(
+                folder.folder_id
+                == shared_root.folder_id
+            ),
+        ),
+        "breadcrumbs": breadcrumbs,
+    }
+
+
+# ---------------------------------------------------------
+# STORIO DELJENJE - DOWNLOAD DELJENOG FAJLA
+# ---------------------------------------------------------
+
+@app.get("/shares/files/{file_id}/download")
+def download_shared_file(
+    file_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    file_record = (
+        db.query(File)
+        .filter(
+            File.file_id == file_id,
+            File.deleted_at.is_(None),
+        )
+        .first()
+    )
+
+    if not file_record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Deljeni fajl nije pronađen.",
+        )
+
+    if not _shared_file_access_allowed(
+        db,
+        user.user_id,
+        file_record,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Nemaš pristup ovom fajlu.",
+        )
+
+    file_path = _resolve_storage_path(
+        file_record
+    )
+
+    if not file_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Fajl ne postoji na disku.",
+        )
+
+    return FileResponse(
+        path=file_path,
+        filename=file_record.name,
+        media_type=(
+            file_record.type
+            or "application/octet-stream"
+        ),
+    )
+
+
+# ---------------------------------------------------------
+# STORIO DELJENJE - OTVORI DELJENI FAJL
+# ---------------------------------------------------------
+
+@app.get("/shares/files/{file_id}/content")
+def shared_file_content(
+    file_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    file_record = (
+        db.query(File)
+        .filter(
+            File.file_id == file_id,
+            File.deleted_at.is_(None),
+        )
+        .first()
+    )
+
+    if not file_record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Deljeni fajl nije pronađen.",
+        )
+
+    if not _shared_file_access_allowed(
+        db,
+        user.user_id,
+        file_record,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Nemaš pristup ovom fajlu.",
+        )
+
+    file_path = _resolve_storage_path(
+        file_record
+    )
+
+    if not file_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Fajl ne postoji na disku.",
+        )
+
+    return FileResponse(
+        path=file_path,
+        media_type=(
+            file_record.type
+            or "application/octet-stream"
+        ),
+        headers={
+            "Content-Disposition": "inline"
+        },
+    )
 
 
 # ---------------------------------------------------------

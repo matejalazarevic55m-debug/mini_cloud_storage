@@ -1,0 +1,340 @@
+/* =========================================================
+   STORIO - DELJENJE
+========================================================= */
+
+.dashboard-container .share-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+
+  display: grid;
+  place-items: center;
+
+  padding: 22px;
+  box-sizing: border-box;
+
+  background: rgba(15, 17, 23, 0.67);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dashboard-container .share-modal {
+  width: min(500px, 100%);
+  padding: 27px;
+  box-sizing: border-box;
+
+  border: 1px solid #e1e3e9;
+  border-radius: 21px;
+
+  background: #ffffff;
+  color: #303139;
+
+  box-shadow: 0 28px 75px rgba(9, 11, 17, 0.3);
+
+  animation: storio-share-in 0.16s ease-out;
+}
+
+@keyframes storio-share-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dashboard-container .share-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+
+  margin-bottom: 20px;
+}
+
+.dashboard-container .share-kicker {
+  display: block;
+  margin-bottom: 5px;
+
+  color: var(--storio-primary);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+}
+
+.dashboard-container .share-modal-header h3 {
+  margin: 0;
+  color: #303139;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.dashboard-container .share-modal-close {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: 36px;
+  height: 36px;
+
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+
+  background: #f2f3f6;
+  color: #686b73;
+
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.dashboard-container .share-modal-close:hover:not(:disabled) {
+  background: #e9eaf0;
+}
+
+.dashboard-container .share-item-preview {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  margin-bottom: 20px;
+  padding: 13px;
+
+  border: 1px solid #e7e9ee;
+  border-radius: 13px;
+
+  background: #fafafe;
+}
+
+.dashboard-container .share-item-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background: var(--storio-primary);
+  color: #ffffff;
+
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.dashboard-container .share-folder-icon {
+  font-size: 18px;
+}
+
+.dashboard-container .share-item-preview > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dashboard-container .share-item-preview strong {
+  overflow: hidden;
+
+  color: #404149;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dashboard-container .share-item-preview small {
+  color: #858891;
+  font-size: 10px;
+}
+
+.dashboard-container .share-recipient-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-container .share-recipient-label > span {
+  color: #565861;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.dashboard-container .share-recipient-label input {
+  width: 100%;
+  min-height: 47px;
+
+  padding: 11px 13px;
+  box-sizing: border-box;
+
+  border: 1px solid #d8dbe2;
+  border-radius: 11px;
+  outline: 0;
+
+  background: #ffffff;
+  color: #303239;
+
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.dashboard-container .share-recipient-label input:focus {
+  border-color: var(--storio-primary);
+  box-shadow: 0 0 0 4px rgba(126, 135, 183, 0.12);
+}
+
+.dashboard-container .share-message {
+  margin: 11px 0 0;
+  padding: 10px 11px;
+
+  border-radius: 10px;
+
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.dashboard-container .share-error {
+  border: 1px solid #efc8cc;
+  background: #fff2f3;
+  color: #a7444e;
+}
+
+.dashboard-container .share-success {
+  border: 1px solid #cfe6d4;
+  background: #f0f8f2;
+  color: #4f8059;
+}
+
+.dashboard-container .share-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 10px;
+
+  margin-top: 20px;
+}
+
+.dashboard-container .share-cancel-btn,
+.dashboard-container .share-submit-btn {
+  appearance: none;
+  -webkit-appearance: none;
+
+  min-height: 44px;
+  padding: 10px 14px;
+
+  border-radius: 11px;
+
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.dashboard-container .share-cancel-btn {
+  border: 1px solid #dfe1e6;
+  background: #f7f8fa;
+  color: #555861;
+}
+
+.dashboard-container .share-submit-btn {
+  border: 1px solid var(--storio-primary);
+  background: var(--storio-primary);
+  color: #ffffff;
+}
+
+.dashboard-container .share-submit-btn:hover:not(:disabled) {
+  border-color: var(--storio-primary-dark);
+  background: var(--storio-primary-dark);
+}
+
+.dashboard-container .share-cancel-btn:disabled,
+.dashboard-container .share-submit-btn:disabled,
+.dashboard-container .share-modal-close:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+/* Shared owner metadata in Drive cards/list */
+.dashboard-container .folder-name,
+.dashboard-container .file-visible-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+}
+
+.dashboard-container .shared-by-label {
+  display: block;
+
+  color: #8a8d96;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* Dark mode */
+.dashboard-container.dark-mode .share-modal {
+  border-color: #343943;
+  background: #20232a;
+  color: #eef0f4;
+}
+
+.dashboard-container.dark-mode .share-modal-header h3,
+.dashboard-container.dark-mode .share-item-preview strong,
+.dashboard-container.dark-mode .share-recipient-label > span {
+  color: #eef0f4;
+}
+
+.dashboard-container.dark-mode .share-modal-close,
+.dashboard-container.dark-mode .share-cancel-btn {
+  border-color: #3a3f49;
+  background: #292d35;
+  color: #c9ccd4;
+}
+
+.dashboard-container.dark-mode .share-item-preview {
+  border-color: #343943;
+  background: #252930;
+}
+
+.dashboard-container.dark-mode .share-item-preview small,
+.dashboard-container.dark-mode .shared-by-label {
+  color: #858a95;
+}
+
+.dashboard-container.dark-mode .share-recipient-label input {
+  border-color: #3a3f49;
+  background: #292d35;
+  color: #eef0f4;
+}
+
+.dashboard-container.dark-mode .share-success {
+  border-color: #31563a;
+  background: #203328;
+  color: #83c28f;
+}
+
+.dashboard-container.dark-mode .share-error {
+  border-color: #5c3439;
+  background: #302326;
+  color: #e6959d;
+}
+
+@media (max-width: 560px) {
+  .dashboard-container .share-modal {
+    padding: 22px;
+  }
+
+  .dashboard-container .share-modal-actions {
+    grid-template-columns: 1fr;
+  }
+}

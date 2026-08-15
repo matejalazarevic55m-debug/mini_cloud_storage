@@ -1,0 +1,536 @@
+/* =========================================================
+   STORIO - HELP POPOVER
+========================================================= */
+
+.dashboard-container .help-menu-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-container .help-popover {
+  position: absolute;
+  top: 50px;
+  right: -88px;
+  z-index: 12000;
+
+  width: 460px;
+  max-height: min(720px, calc(100vh - 95px));
+  overflow-y: auto;
+
+  padding: 22px;
+  box-sizing: border-box;
+
+  border: 1px solid #e1e3e9;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #2f3036;
+
+  box-shadow:
+    0 22px 58px rgba(18, 20, 27, 0.18),
+    0 4px 14px rgba(18, 20, 27, 0.08);
+
+  animation: storio-help-in 0.16s ease-out;
+}
+
+@keyframes storio-help-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dashboard-container .help-popover-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+
+  margin-bottom: 20px;
+}
+
+.dashboard-container .help-kicker {
+  display: block;
+  margin-bottom: 4px;
+
+  color: var(--storio-primary);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+}
+
+.dashboard-container .help-popover-header h3 {
+  margin: 0;
+  color: #303139;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.dashboard-container .help-close-btn {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+
+  background: #f3f4f7;
+  color: #666972;
+
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.dashboard-container .help-close-btn:hover {
+  background: #e9eaf0;
+}
+
+.dashboard-container .help-section {
+  padding: 18px 0;
+  border-top: 1px solid #eceef2;
+}
+
+.dashboard-container .help-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.dashboard-container .help-section-heading {
+  margin-bottom: 14px;
+}
+
+.dashboard-container .help-section-heading h4 {
+  margin: 0 0 4px;
+  color: #3a3b42;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.dashboard-container .help-section-heading p {
+  margin: 0;
+  color: #858891;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.dashboard-container .help-guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-container .help-guide-item {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+
+  padding: 13px;
+  border: 1px solid #e9eaf0;
+  border-radius: 13px;
+
+  background: #fafafe;
+}
+
+.dashboard-container .help-guide-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+
+  border-radius: 12px;
+  background: var(--storio-primary-light);
+  color: var(--storio-primary-dark);
+
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.dashboard-container .help-guide-item strong {
+  display: block;
+  margin: 1px 0 3px;
+
+  color: #44464e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dashboard-container .help-guide-item p {
+  margin: 0;
+  color: #7e818a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.dashboard-container .help-about-card {
+  padding: 4px 14px;
+
+  border: 1px solid #e8e9ee;
+  border-radius: 13px;
+
+  background: #fafafe;
+}
+
+.dashboard-container .help-about-card > div {
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  align-items: center;
+  gap: 12px;
+
+  border-bottom: 1px solid #eceef2;
+}
+
+.dashboard-container .help-about-card > div:last-child {
+  border-bottom: none;
+}
+
+.dashboard-container .help-about-card span {
+  color: #858891;
+  font-size: 12px;
+}
+
+.dashboard-container .help-about-card strong {
+  color: #484a52;
+  font-size: 11px;
+  font-weight: 750;
+  text-align: right;
+}
+
+.dashboard-container .help-support-btn {
+  width: 100%;
+  min-height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+  padding: 11px 14px;
+
+  border: 1px solid var(--storio-primary);
+  border-radius: 12px;
+
+  background: var(--storio-primary);
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dashboard-container .help-support-btn:hover {
+  border-color: var(--storio-primary-dark);
+  background: var(--storio-primary-dark);
+  transform: translateY(-1px);
+}
+
+.dashboard-container .help-support-email {
+  display: block;
+  margin-top: 9px;
+
+  color: #8a8d95;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* DARK MODE */
+
+.dashboard-container.dark-mode .help-popover {
+  border-color: #343943;
+  background: #20232a;
+  color: #eef0f4;
+}
+
+.dashboard-container.dark-mode .help-popover-header h3,
+.dashboard-container.dark-mode .help-section-heading h4 {
+  color: #eef0f4;
+}
+
+.dashboard-container.dark-mode .help-close-btn {
+  background: #292d35;
+  color: #c9ccd4;
+}
+
+.dashboard-container.dark-mode .help-close-btn:hover {
+  background: #323740;
+}
+
+.dashboard-container.dark-mode .help-section {
+  border-top-color: #343943;
+}
+
+.dashboard-container.dark-mode .help-section-heading p,
+.dashboard-container.dark-mode .help-guide-item p,
+.dashboard-container.dark-mode .help-about-card span,
+.dashboard-container.dark-mode .help-support-email {
+  color: #858a95;
+}
+
+.dashboard-container.dark-mode .help-guide-item,
+.dashboard-container.dark-mode .help-about-card {
+  border-color: #343943;
+  background: #252930;
+}
+
+.dashboard-container.dark-mode .help-guide-item strong,
+.dashboard-container.dark-mode .help-about-card strong {
+  color: #cbd0d8;
+}
+
+.dashboard-container.dark-mode .help-about-card > div {
+  border-bottom-color: #343943;
+}
+
+@media (max-width: 560px) {
+  .dashboard-container .help-popover {
+    position: fixed;
+    top: 78px;
+    right: 12px;
+    left: 12px;
+
+    width: auto;
+    max-height: calc(100vh - 95px);
+  }
+}
+
+
+/* =========================================================
+   HELP SIZE BOOST
+========================================================= */
+
+.dashboard-container .help-popover {
+  width: 460px !important;
+  padding: 22px !important;
+  border-radius: 20px !important;
+}
+
+.dashboard-container .help-popover-header h3 {
+  font-size: 23px !important;
+}
+
+.dashboard-container .help-kicker {
+  font-size: 10px !important;
+}
+
+.dashboard-container .help-close-btn {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 21px !important;
+}
+
+.dashboard-container .help-section {
+  padding: 18px 0 !important;
+}
+
+.dashboard-container .help-section-heading h4 {
+  font-size: 14px !important;
+}
+
+.dashboard-container .help-section-heading p {
+  font-size: 11px !important;
+  line-height: 1.55 !important;
+}
+
+.dashboard-container .help-guide-item {
+  grid-template-columns: 42px 1fr !important;
+  gap: 12px !important;
+  padding: 13px !important;
+  border-radius: 13px !important;
+}
+
+.dashboard-container .help-guide-icon {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 16px !important;
+}
+
+.dashboard-container .help-guide-item strong {
+  font-size: 12px !important;
+}
+
+.dashboard-container .help-guide-item p {
+  font-size: 10px !important;
+  line-height: 1.55 !important;
+}
+
+.dashboard-container .help-about-card {
+  padding: 4px 14px !important;
+}
+
+.dashboard-container .help-about-card > div {
+  min-height: 40px !important;
+  grid-template-columns: 100px 1fr !important;
+}
+
+.dashboard-container .help-about-card span,
+.dashboard-container .help-about-card strong {
+  font-size: 10px !important;
+}
+
+.dashboard-container .help-support-btn {
+  min-height: 46px !important;
+  font-size: 12px !important;
+  border-radius: 12px !important;
+}
+
+.dashboard-container .help-support-email {
+  margin-top: 9px !important;
+  font-size: 10px !important;
+}
+
+@media (max-width: 560px) {
+  .dashboard-container .help-popover {
+    width: auto !important;
+    padding: 18px !important;
+  }
+}
+
+
+/* =========================================================
+   HELP XL SIZE BOOST
+========================================================= */
+
+.dashboard-container .help-popover {
+  width: 540px !important;
+  max-height: min(780px, calc(100vh - 90px)) !important;
+  padding: 26px !important;
+  border-radius: 22px !important;
+}
+
+.dashboard-container .help-popover-header {
+  margin-bottom: 24px !important;
+}
+
+.dashboard-container .help-popover-header h3 {
+  font-size: 28px !important;
+  line-height: 1.15 !important;
+}
+
+.dashboard-container .help-kicker {
+  font-size: 12px !important;
+  letter-spacing: 0.14em !important;
+}
+
+.dashboard-container .help-close-btn {
+  width: 42px !important;
+  height: 42px !important;
+  font-size: 24px !important;
+}
+
+.dashboard-container .help-section {
+  padding: 22px 0 !important;
+}
+
+.dashboard-container .help-section-heading {
+  margin-bottom: 16px !important;
+}
+
+.dashboard-container .help-section-heading h4 {
+  font-size: 17px !important;
+  line-height: 1.25 !important;
+}
+
+.dashboard-container .help-section-heading p {
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+.dashboard-container .help-guide-list {
+  gap: 12px !important;
+}
+
+.dashboard-container .help-guide-item {
+  grid-template-columns: 50px 1fr !important;
+  gap: 14px !important;
+  padding: 16px !important;
+  border-radius: 15px !important;
+}
+
+.dashboard-container .help-guide-icon {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+  font-size: 19px !important;
+}
+
+.dashboard-container .help-guide-item strong {
+  margin: 2px 0 5px !important;
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+}
+
+.dashboard-container .help-guide-item p {
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+}
+
+.dashboard-container .help-about-card {
+  padding: 6px 16px !important;
+  border-radius: 14px !important;
+}
+
+.dashboard-container .help-about-card > div {
+  min-height: 46px !important;
+  grid-template-columns: 120px 1fr !important;
+}
+
+.dashboard-container .help-about-card span {
+  font-size: 12px !important;
+}
+
+.dashboard-container .help-about-card strong {
+  font-size: 12px !important;
+}
+
+.dashboard-container .help-support-btn {
+  min-height: 52px !important;
+  padding: 13px 16px !important;
+  border-radius: 13px !important;
+  font-size: 14px !important;
+}
+
+.dashboard-container .help-support-email {
+  margin-top: 11px !important;
+  font-size: 12px !important;
+}
+
+@media (max-width: 700px) {
+  .dashboard-container .help-popover {
+    position: fixed !important;
+    top: 78px !important;
+    right: 12px !important;
+    left: 12px !important;
+    width: auto !important;
+    max-height: calc(100vh - 95px) !important;
+    padding: 22px !important;
+  }
+
+  .dashboard-container .help-popover-header h3 {
+    font-size: 25px !important;
+  }
+
+  .dashboard-container .help-section-heading h4 {
+    font-size: 16px !important;
+  }
+
+  .dashboard-container .help-section-heading p,
+  .dashboard-container .help-guide-item p {
+    font-size: 12px !important;
+  }
+}

@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./dashboard.css";
+import "./settings.css";
+import "./deleteAccount.css";
+import "./securitySettings.css";
+import "./profile.css";
+import "./help.css";
+import "./share.css";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -24,7 +30,10 @@ const procitajDashboardNavigaciju = () => {
 
   let folderId = null;
 
-  if (sekcija === "Moj Disk") {
+  if (
+    sekcija === "Moj Disk" ||
+    sekcija === "Deljeno sa mnom"
+  ) {
     const rawFolderId = params.get("folder");
 
     if (rawFolderId && /^\d+$/.test(rawFolderId)) {
@@ -56,7 +65,8 @@ const sacuvajDashboardNavigaciju = (
   }
 
   if (
-    sekcija === "Moj Disk" &&
+    (sekcija === "Moj Disk" ||
+      sekcija === "Deljeno sa mnom") &&
     folderId !== null &&
     folderId !== undefined
   ) {
@@ -118,6 +128,12 @@ export default function Dashboard({ korisnik, naOdjavu }) {
   const [otvorenMeniFajla, setOtvorenMeniFajla] = useState(null);
   const [otvorenMeniFoldera, setOtvorenMeniFoldera] = useState(null);
 
+  const [stavkaZaDeljenje, setStavkaZaDeljenje] = useState(null);
+  const [primalacDeljenja, setPrimalacDeljenja] = useState("");
+  const [deljenjeUToku, setDeljenjeUToku] = useState(false);
+  const [deljenjeGreska, setDeljenjeGreska] = useState("");
+  const [deljenjeUspeh, setDeljenjeUspeh] = useState("");
+
   const [fajlZaPreimenovanje, setFajlZaPreimenovanje] = useState(null);
   const [novoImeFajla, setNovoImeFajla] = useState("");
   const [fajlZaDetalje, setFajlZaDetalje] = useState(null);
@@ -126,8 +142,36 @@ export default function Dashboard({ korisnik, naOdjavu }) {
   const [novoImeFolderaRename, setNovoImeFolderaRename] = useState("");
   const [folderZaDetalje, setFolderZaDetalje] = useState(null);
 
+  const [prikaziPodesavanja, setPrikaziPodesavanja] = useState(false);
+  const [tema, setTema] = useState(
+    () => localStorage.getItem("storio-theme") || "light"
+  );
+  const [resetLozinkaUToku, setResetLozinkaUToku] = useState(false);
+  const [resetLozinkaStatus, setResetLozinkaStatus] = useState("");
+  const [odjavaSvudaUToku, setOdjavaSvudaUToku] = useState(false);
+
+  const [profil, setProfil] = useState(() => ({
+    ...(korisnik || {}),
+  }));
+  const [prikaziProfil, setPrikaziProfil] = useState(false);
+  const [prikaziPomoc, setPrikaziPomoc] = useState(false);
+  const [profilUToku, setProfilUToku] = useState(false);
+  const [profilGreska, setProfilGreska] = useState("");
+  const [avatarVersion, setAvatarVersion] = useState(() => Date.now());
+
+  const [prikaziUsernameModal, setPrikaziUsernameModal] = useState(false);
+  const [novoKorisnickoIme, setNovoKorisnickoIme] = useState(
+    () => korisnik?.username || ""
+  );
+
+  const [prikaziBrisanjeNaloga, setPrikaziBrisanjeNaloga] = useState(false);
+  const [potvrdaBrisanja, setPotvrdaBrisanja] = useState("");
+  const [brisanjeNalogaUToku, setBrisanjeNalogaUToku] = useState(false);
+  const [brisanjeNalogaGreska, setBrisanjeNalogaGreska] = useState("");
+
   const fileInputRef = useRef(null);
   const zipInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
 
   const formatVelicine = (bytes) => {
     if (!bytes) return "0 B";
@@ -212,6 +256,117 @@ export default function Dashboard({ korisnik, naOdjavu }) {
     return response;
   };
 
+  const ucitajProfil = async () => {
+    try {
+      const response = await api("/auth/me");
+      const data = await response.json();
+
+      setProfil(data.user || {});
+      setNovoKorisnickoIme(data.user?.username || "");
+    } catch (error) {
+      console.error("Ne mogu da učitam profil:", error);
+    }
+  };
+
+  const promeniProfilnu = async (e) => {
+    const fajl = e.target.files?.[0];
+    e.target.value = "";
+
+    if (!fajl) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(fajl.type)) {
+      setProfilGreska("Profilna slika mora biti JPG, PNG ili WEBP.");
+      return;
+    }
+
+    if (fajl.size > 5 * 1024 * 1024) {
+      setProfilGreska("Profilna slika može imati najviše 5 MB.");
+      return;
+    }
+
+    try {
+      setProfilUToku(true);
+      setProfilGreska("");
+
+      const formData = new FormData();
+      formData.append("avatar", fajl);
+
+      const response = await api("/auth/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      setProfil(data.user || profil);
+      setAvatarVersion(Date.now());
+    } catch (error) {
+      setProfilGreska(
+        error.message || "Promena profilne slike nije uspela."
+      );
+    } finally {
+      setProfilUToku(false);
+    }
+  };
+
+  const ukloniProfilnu = async () => {
+    try {
+      setProfilUToku(true);
+      setProfilGreska("");
+
+      const response = await api("/auth/profile/avatar", {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      setProfil(data.user || profil);
+      setAvatarVersion(Date.now());
+    } catch (error) {
+      setProfilGreska(
+        error.message || "Uklanjanje profilne slike nije uspelo."
+      );
+    } finally {
+      setProfilUToku(false);
+    }
+  };
+
+  const sacuvajKorisnickoIme = async (e) => {
+    e.preventDefault();
+
+    const username = novoKorisnickoIme.trim();
+
+    if (username.length < 3) {
+      setProfilGreska("Korisničko ime mora imati najmanje 3 karaktera.");
+      return;
+    }
+
+    try {
+      setProfilUToku(true);
+      setProfilGreska("");
+
+      const response = await api("/auth/profile/username", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username }),
+      });
+
+      const data = await response.json();
+
+      setProfil(data.user || profil);
+      setNovoKorisnickoIme(data.user?.username || username);
+      setPrikaziUsernameModal(false);
+    } catch (error) {
+      setProfilGreska(
+        error.message || "Promena korisničkog imena nije uspela."
+      );
+    } finally {
+      setProfilUToku(false);
+    }
+  };
+
   const osveziStorage = async () => {
     const response = await api("/storage/usage");
     const usage = await response.json();
@@ -222,6 +377,28 @@ export default function Dashboard({ korisnik, naOdjavu }) {
     try {
       setGreska("");
       setUcitavanje(true);
+
+      if (sekcija === "Deljeno sa mnom") {
+        const sharedUrl =
+          folderId === null
+            ? "/shares/received"
+            : `/shares/folders/${folderId}/items`;
+
+        const [itemsResponse, usageResponse] = await Promise.all([
+          api(sharedUrl),
+          api("/storage/usage"),
+        ]);
+
+        const items = await itemsResponse.json();
+        const usage = await usageResponse.json();
+
+        setFolderi(items.folders || []);
+        setFajlovi(items.files || []);
+        setCurrentFolder(items.current_folder || null);
+        setBreadcrumbs(items.breadcrumbs || []);
+        setStorage(usage);
+        return;
+      }
 
       const globalniPrikaz = sekcija !== "Moj Disk";
       const params = new URLSearchParams({
@@ -294,6 +471,14 @@ export default function Dashboard({ korisnik, naOdjavu }) {
   }, []);
 
   useEffect(() => {
+    localStorage.setItem("storio-theme", tema);
+  }, [tema]);
+
+  useEffect(() => {
+    ucitajProfil();
+  }, []);
+
+  useEffect(() => {
     ucitajPodatke(currentFolderId, aktivnaSekcija);
   }, [currentFolderId, aktivnaSekcija]);
 
@@ -305,6 +490,8 @@ export default function Dashboard({ korisnik, naOdjavu }) {
     setPrikaziNoviMeni(false);
     setOtvorenMeniFajla(null);
     setOtvorenMeniFoldera(null);
+    setPrikaziProfil(false);
+    setPrikaziPomoc(false);
   };
 
   const promeniSekciju = (sekcija) => {
@@ -333,33 +520,43 @@ export default function Dashboard({ korisnik, naOdjavu }) {
   const otvoriFolder = (folder) => {
     if (!folder?.folder_id) return;
 
-    setAktivnaSekcija("Moj Disk");
+    const ciljnaSekcija =
+      folder.shared || aktivnaSekcija === "Deljeno sa mnom"
+        ? "Deljeno sa mnom"
+        : "Moj Disk";
+
+    setAktivnaSekcija(ciljnaSekcija);
     setCurrentFolderId(folder.folder_id);
     setPretraga("");
     zatvoriMenije();
 
     sacuvajDashboardNavigaciju(
-      "Moj Disk",
+      ciljnaSekcija,
       folder.folder_id
     );
   };
 
   const idiUFolder = (folderId) => {
+    const ciljnaSekcija =
+      aktivnaSekcija === "Deljeno sa mnom"
+        ? "Deljeno sa mnom"
+        : "Moj Disk";
+
     if (
-      aktivnaSekcija === "Moj Disk" &&
+      aktivnaSekcija === ciljnaSekcija &&
       currentFolderId === folderId
     ) {
       zatvoriMenije();
       return;
     }
 
-    setAktivnaSekcija("Moj Disk");
+    setAktivnaSekcija(ciljnaSekcija);
     setCurrentFolderId(folderId);
     setPretraga("");
     zatvoriMenije();
 
     sacuvajDashboardNavigaciju(
-      "Moj Disk",
+      ciljnaSekcija,
       folderId
     );
   };
@@ -854,7 +1051,9 @@ export default function Dashboard({ korisnik, naOdjavu }) {
 
   const preuzmiFajl = (fajl) => {
     const link = document.createElement("a");
-    link.href = `${API_URL}/files/${fajl.file_id}/download`;
+    link.href = fajl.shared
+      ? `${API_URL}/shares/files/${fajl.file_id}/download`
+      : `${API_URL}/files/${fajl.file_id}/download`;
     link.rel = "noopener";
     document.body.appendChild(link);
     link.click();
@@ -863,8 +1062,12 @@ export default function Dashboard({ korisnik, naOdjavu }) {
   };
 
   const otvoriFajl = (fajl) => {
+    const contentUrl = fajl.shared
+      ? `${API_URL}/shares/files/${fajl.file_id}/content`
+      : `${API_URL}/files/${fajl.file_id}/content`;
+
     window.open(
-      `${API_URL}/files/${fajl.file_id}/content`,
+      contentUrl,
       "_blank",
       "noopener,noreferrer"
     );
@@ -921,32 +1124,81 @@ export default function Dashboard({ korisnik, naOdjavu }) {
     }
   };
 
-  const podeliFajl = async (fajl) => {
+  const otvoriDeljenjeFajla = (fajl) => {
+    setStavkaZaDeljenje({
+      tip: "file",
+      id: fajl.file_id,
+      naziv: fajl.name,
+    });
+    setPrimalacDeljenja("");
+    setDeljenjeGreska("");
+    setDeljenjeUspeh("");
+    setOtvorenMeniFajla(null);
+  };
+
+  const otvoriDeljenjeFoldera = (folder) => {
+    setStavkaZaDeljenje({
+      tip: "folder",
+      id: folder.folder_id,
+      naziv: folder.name,
+    });
+    setPrimalacDeljenja("");
+    setDeljenjeGreska("");
+    setDeljenjeUspeh("");
+    setOtvorenMeniFoldera(null);
+  };
+
+  const zatvoriDeljenje = () => {
+    if (deljenjeUToku) return;
+
+    setStavkaZaDeljenje(null);
+    setPrimalacDeljenja("");
+    setDeljenjeGreska("");
+    setDeljenjeUspeh("");
+  };
+
+  const podeliNaStorio = async (e) => {
+    e.preventDefault();
+
+    const recipient = primalacDeljenja.trim();
+
+    if (!stavkaZaDeljenje || !recipient) {
+      setDeljenjeGreska(
+        "Unesi korisničko ime ili email Storio korisnika."
+      );
+      return;
+    }
+
     try {
-      const blob = await fetchFileBlob(fajl);
-      const shareFile = new window.File([blob], fajl.name, {
-        type: fajl.type || blob.type || "application/octet-stream",
+      setDeljenjeUToku(true);
+      setDeljenjeGreska("");
+      setDeljenjeUspeh("");
+
+      const endpoint =
+        stavkaZaDeljenje.tip === "folder"
+          ? `/shares/folders/${stavkaZaDeljenje.id}`
+          : `/shares/files/${stavkaZaDeljenje.id}`;
+
+      const response = await api(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ recipient }),
       });
 
-      if (
-        navigator.share &&
-        (!navigator.canShare || navigator.canShare({ files: [shareFile] }))
-      ) {
-        await navigator.share({
-          title: fajl.name,
-          files: [shareFile],
-        });
-      } else {
-        alert(
-          "Browser ne podržava direktno deljenje fajla. Storio link za deljenje možemo dodati kao sledeću backend funkciju."
-        );
-      }
+      const data = await response.json();
+
+      setDeljenjeUspeh(
+        data.message || "Stavka je uspešno podeljena."
+      );
+      setPrimalacDeljenja("");
     } catch (error) {
-      if (error?.name !== "AbortError") {
-        alert(error.message || "Deljenje nije uspelo.");
-      }
+      setDeljenjeGreska(
+        error.message || "Deljenje nije uspelo."
+      );
     } finally {
-      setOtvorenMeniFajla(null);
+      setDeljenjeUToku(false);
     }
   };
 
@@ -1006,14 +1258,135 @@ export default function Dashboard({ korisnik, naOdjavu }) {
   };
 
   // ---------------------------------------------------------
+  // PODEŠAVANJA
+  // ---------------------------------------------------------
+
+  const posaljiLinkZaPromenuLozinke = async () => {
+    const profilEmail = profil?.email || korisnik?.email;
+
+    if (!profilEmail) {
+      setResetLozinkaStatus("Email korisnika nije dostupan.");
+      return;
+    }
+
+    try {
+      setResetLozinkaUToku(true);
+      setResetLozinkaStatus("");
+
+      const response = await api("/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: profilEmail,
+        }),
+      });
+
+      const data = await response.json();
+
+      setResetLozinkaStatus(
+        data.message ||
+          "Poslali smo ti link za promenu lozinke na email."
+      );
+    } catch (error) {
+      setResetLozinkaStatus(
+        error.message || "Slanje linka za promenu lozinke nije uspelo."
+      );
+    } finally {
+      setResetLozinkaUToku(false);
+    }
+  };
+
+  const odjaviSe = async () => {
+    try {
+      await api("/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.error("Odjava sa servera nije uspela:", error);
+    } finally {
+      naOdjavu();
+    }
+  };
+
+  const odjaviSaSvihUredjaja = async () => {
+    const potvrda = window.confirm(
+      "Bićeš odjavljen sa svih uređaja, uključujući i ovaj. Nastaviti?"
+    );
+
+    if (!potvrda) return;
+
+    try {
+      setOdjavaSvudaUToku(true);
+      setResetLozinkaStatus("");
+
+      await api("/auth/logout-all", {
+        method: "POST",
+      });
+
+      setPrikaziPodesavanja(false);
+      naOdjavu();
+    } catch (error) {
+      setResetLozinkaStatus(
+        error.message || "Odjava sa svih uređaja nije uspela."
+      );
+    } finally {
+      setOdjavaSvudaUToku(false);
+    }
+  };
+
+  const zatvoriBrisanjeNaloga = () => {
+    if (brisanjeNalogaUToku) return;
+
+    setPrikaziBrisanjeNaloga(false);
+    setPotvrdaBrisanja("");
+    setBrisanjeNalogaGreska("");
+  };
+
+  const obrisiNalog = async (e) => {
+    e.preventDefault();
+
+    if (potvrdaBrisanja.trim() !== "OBRISI") {
+      setBrisanjeNalogaGreska('Za potvrdu upiši tačno "OBRISI".');
+      return;
+    }
+
+    try {
+      setBrisanjeNalogaUToku(true);
+      setBrisanjeNalogaGreska("");
+
+      await api("/auth/delete-account", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          confirmation: potvrdaBrisanja.trim(),
+        }),
+      });
+
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith("storio-upload:"))
+        .forEach((key) => localStorage.removeItem(key));
+
+      localStorage.removeItem("storio-theme");
+      setPrikaziBrisanjeNaloga(false);
+      naOdjavu();
+    } catch (error) {
+      setBrisanjeNalogaGreska(
+        error.message || "Brisanje naloga nije uspelo."
+      );
+    } finally {
+      setBrisanjeNalogaUToku(false);
+    }
+  };
+
+  // ---------------------------------------------------------
   // FILTERI
   // ---------------------------------------------------------
 
   const prikazaniFolderi = useMemo(() => {
     const query = pretraga.trim().toLowerCase();
     let rezultat = [...folderi];
-
-    if (aktivnaSekcija === "Deljeno sa mnom") return [];
 
     if (aktivnaSekcija === "Otpad") {
       rezultat = rezultat.filter((folder) => folder.deleted_at);
@@ -1040,8 +1413,6 @@ export default function Dashboard({ korisnik, naOdjavu }) {
   const prikazaniFajlovi = useMemo(() => {
     const query = pretraga.trim().toLowerCase();
     let rezultat = [...fajlovi];
-
-    if (aktivnaSekcija === "Deljeno sa mnom") return [];
 
     if (aktivnaSekcija === "Otpad") {
       rezultat = rezultat.filter((fajl) => fajl.deleted_at);
@@ -1097,7 +1468,8 @@ export default function Dashboard({ korisnik, naOdjavu }) {
     if (aktivnaSekcija === "Deljeno sa mnom") {
       return {
         naslov: "Ništa nije podeljeno sa tobom",
-        tekst: "Pravo Storio deljenje dodaćemo kao sledeću backend funkciju.",
+        tekst:
+          "Fajlovi i folderi koje drugi Storio korisnici podele sa tobom pojaviće se ovde.",
       };
     }
 
@@ -1115,9 +1487,23 @@ export default function Dashboard({ korisnik, naOdjavu }) {
   }, [aktivnaSekcija, pretraga, currentFolder]);
 
   const avatarSlovo =
+    profil?.username?.charAt(0)?.toUpperCase() ||
+    profil?.email?.charAt(0)?.toUpperCase() ||
     korisnik?.username?.charAt(0)?.toUpperCase() ||
     korisnik?.email?.charAt(0)?.toUpperCase() ||
     "S";
+
+  const avatarUrl = profil?.avatar_url
+    ? `${API_URL}${profil.avatar_url}?v=${avatarVersion}`
+    : null;
+
+  const datumKreiranjaNaloga = profil?.created_at
+    ? new Date(profil.created_at).toLocaleDateString("sr-RS", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : "Nije dostupno";
 
   const naslovStranice =
     aktivnaSekcija === "Moj Disk" && currentFolder
@@ -1126,7 +1512,7 @@ export default function Dashboard({ korisnik, naOdjavu }) {
 
   return (
     <div
-      className="dashboard-container"
+      className={`dashboard-container ${tema === "dark" ? "dark-mode" : ""}`}
       onClick={zatvoriMenije}
     >
       <aside className="dash-sidebar">
@@ -1251,7 +1637,7 @@ export default function Dashboard({ korisnik, naOdjavu }) {
         </div>
 
         <div className="sidebar-bottom">
-          <button className="logout-btn" onClick={naOdjavu}>
+          <button className="logout-btn" onClick={odjaviSe}>
             Odjavi se
           </button>
         </div>
@@ -1283,9 +1669,295 @@ export default function Dashboard({ korisnik, naOdjavu }) {
           </div>
 
           <div className="header-actions">
-            <button className="header-icon-btn">?</button>
-            <button className="header-icon-btn">⚙</button>
-            <div className="user-profile">{avatarSlovo}</div>
+            <div
+              className="help-menu-wrapper"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                className="header-icon-btn"
+                aria-label="Storio pomoć"
+                title="Pomoć"
+                onClick={() => {
+                  setPrikaziProfil(false);
+                  setPrikaziPodesavanja(false);
+                  setPrikaziPomoc((stanje) => !stanje);
+                }}
+              >
+                ?
+              </button>
+
+              {prikaziPomoc && (
+                <div className="help-popover">
+                  <div className="help-popover-header">
+                    <div>
+                      <span className="help-kicker">STORIO</span>
+                      <h3>Pomoć</h3>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="help-close-btn"
+                      aria-label="Zatvori pomoć"
+                      onClick={() => setPrikaziPomoc(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <section className="help-section">
+                    <div className="help-section-heading">
+                      <h4>Kako koristiti Storio</h4>
+                      <p>Brzi vodič kroz osnovne funkcije.</p>
+                    </div>
+
+                    <div className="help-guide-list">
+                      <div className="help-guide-item">
+                        <span className="help-guide-icon">↑</span>
+                        <div>
+                          <strong>Upload fajlova</strong>
+                          <p>
+                            Klikni na + Novo i izaberi Upload fajla ili ZIP arhive.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="help-guide-item">
+                        <span className="help-guide-icon">＋</span>
+                        <div>
+                          <strong>Kreiranje foldera</strong>
+                          <p>
+                            Klikni na + Novo → Novi folder i unesi naziv foldera.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="help-guide-item">
+                        <span className="help-guide-icon">★</span>
+                        <div>
+                          <strong>Zvezdice</strong>
+                          <p>
+                            U meniju fajla ili foldera izaberi Dodaj u zvezdice.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="help-guide-item">
+                        <span className="help-guide-icon">↶</span>
+                        <div>
+                          <strong>Otpad i vraćanje</strong>
+                          <p>
+                            Obrisane stavke ostaju u Otpadu dok ih ne vratiš ili trajno obrišeš.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="help-section help-about-section">
+                    <div className="help-section-heading">
+                      <h4>O aplikaciji</h4>
+                    </div>
+
+                    <div className="help-about-card">
+                      <div>
+                        <span>Naziv</span>
+                        <strong>Storio</strong>
+                      </div>
+                      <div>
+                        <span>Verzija</span>
+                        <strong>1.0.0</strong>
+                      </div>
+                      <div>
+                        <span>Tip</span>
+                        <strong>Privatni cloud storage</strong>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="help-section help-support-section">
+                    <div className="help-section-heading">
+                      <h4>Prijavi problem</h4>
+                      <p>
+                        Ako nešto ne radi kako treba, pošalji opis problema.
+                      </p>
+                    </div>
+
+                    <a
+                      className="help-support-btn"
+                      href="mailto:support@storiocloud.net?subject=Storio%20-%20prijava%20problema"
+                    >
+                      Pošalji prijavu
+                    </a>
+
+                    <span className="help-support-email">
+                      support@storiocloud.net
+                    </span>
+                  </section>
+                </div>
+              )}
+            </div>
+            <button
+              className="header-icon-btn"
+              aria-label="Podešavanja"
+              title="Podešavanja"
+              onClick={(e) => {
+                e.stopPropagation();
+                setResetLozinkaStatus("");
+                setPrikaziProfil(false);
+                setPrikaziPomoc(false);
+                setPrikaziPodesavanja(true);
+              }}
+            >
+              ⚙
+            </button>
+            <div
+              className="profile-menu-wrapper"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                className="user-profile user-profile-button"
+                aria-label="Otvori profil"
+                title="Profil"
+                onClick={() => {
+                  setPrikaziPodesavanja(false);
+                  setPrikaziPomoc(false);
+                  setProfilGreska("");
+                  setPrikaziProfil((stanje) => !stanje);
+                }}
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Profilna slika"
+                    className="header-profile-image"
+                  />
+                ) : (
+                  avatarSlovo
+                )}
+              </button>
+
+              {prikaziProfil && (
+                <div className="profile-popover">
+                  <div className="profile-popover-top">
+                    <span className="profile-kicker">STORIO PROFIL</span>
+
+                    <button
+                      type="button"
+                      className="profile-popover-close"
+                      aria-label="Zatvori profil"
+                      onClick={() => setPrikaziProfil(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="profile-hero">
+                    <div className="profile-avatar-large">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="Profilna slika" />
+                      ) : (
+                        avatarSlovo
+                      )}
+                    </div>
+
+                    <div className="profile-identity">
+                      <strong>
+                        {profil?.username ||
+                          korisnik?.username ||
+                          "Storio korisnik"}
+                      </strong>
+                      <span>
+                        {profil?.email ||
+                          korisnik?.email ||
+                          "Email nije dostupan"}
+                      </span>
+
+                      {profil?.is_verified !== false && (
+                        <small className="profile-verified">
+                          ✓ Verifikovan nalog
+                        </small>
+                      )}
+                    </div>
+                  </div>
+
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    hidden
+                    onChange={promeniProfilnu}
+                  />
+
+                  <div className="profile-actions-grid">
+                    <button
+                      type="button"
+                      className="profile-action-primary"
+                      disabled={profilUToku}
+                      onClick={() => avatarInputRef.current?.click()}
+                    >
+                      Promeni profilnu
+                    </button>
+
+                    <button
+                      type="button"
+                      className="profile-action-secondary"
+                      disabled={profilUToku}
+                      onClick={() => {
+                        setNovoKorisnickoIme(
+                          profil?.username || korisnik?.username || ""
+                        );
+                        setPrikaziUsernameModal(true);
+                        setPrikaziProfil(false);
+                      }}
+                    >
+                      Promeni korisničko ime
+                    </button>
+                  </div>
+
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      className="profile-remove-avatar"
+                      disabled={profilUToku}
+                      onClick={ukloniProfilnu}
+                    >
+                      Ukloni profilnu sliku
+                    </button>
+                  )}
+
+                  <div className="profile-info-card">
+                    <div className="profile-info-row">
+                      <span>Nalog napravljen</span>
+                      <strong>{datumKreiranjaNaloga}</strong>
+                    </div>
+
+                    <div className="profile-info-row">
+                      <span>Email</span>
+                      <strong>
+                        {profil?.email ||
+                          korisnik?.email ||
+                          "Nije dostupan"}
+                      </strong>
+                    </div>
+
+                    <div className="profile-info-row">
+                      <span>Status</span>
+                      <strong className="profile-status-active">
+                        Aktivan
+                      </strong>
+                    </div>
+                  </div>
+
+                  {profilGreska && (
+                    <p className="profile-error-message">
+                      {profilGreska}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -1460,9 +2132,17 @@ export default function Dashboard({ korisnik, naOdjavu }) {
                           <span className="folder-symbol" aria-hidden="true" />
 
                           <span className="folder-name">
-                            {folder.name}
-                            {folder.is_starred && (
-                              <span className="star-indicator">★</span>
+                            <span>
+                              {folder.name}
+                              {folder.is_starred && !folder.shared && (
+                                <span className="star-indicator">★</span>
+                              )}
+                            </span>
+
+                            {folder.shared && folder.shared_by_username && (
+                              <small className="shared-by-label">
+                                Podelio: {folder.shared_by_username}
+                              </small>
                             )}
                           </span>
                         </div>
@@ -1488,7 +2168,22 @@ export default function Dashboard({ korisnik, naOdjavu }) {
 
                           {otvorenMeniFoldera === folder.folder_id && (
                             <div className="file-dropdown folder-dropdown">
-                              {aktivnaSekcija === "Otpad" ? (
+                              {aktivnaSekcija === "Deljeno sa mnom" ? (
+                                <>
+                                  <button onClick={() => otvoriFolder(folder)}>
+                                    Otvori
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      setFolderZaDetalje(folder);
+                                      setOtvorenMeniFoldera(null);
+                                    }}
+                                  >
+                                    Detalji
+                                  </button>
+                                </>
+                              ) : aktivnaSekcija === "Otpad" ? (
                                 <>
                                   <button
                                     onClick={() => vratiFolderIzOtpada(folder)}
@@ -1526,6 +2221,12 @@ export default function Dashboard({ korisnik, naOdjavu }) {
                                     }
                                   >
                                     Preimenuj
+                                  </button>
+
+                                  <button
+                                    onClick={() => otvoriDeljenjeFoldera(folder)}
+                                  >
+                                    Deli
                                   </button>
 
                                   <button
@@ -1599,9 +2300,17 @@ export default function Dashboard({ korisnik, naOdjavu }) {
                             </div>
 
                             <span className="file-visible-name">
-                              {fajl.name}
-                              {fajl.is_starred && (
-                                <span className="star-indicator">★</span>
+                              <span>
+                                {fajl.name}
+                                {fajl.is_starred && !fajl.shared && (
+                                  <span className="star-indicator">★</span>
+                                )}
+                              </span>
+
+                              {fajl.shared && fajl.shared_by_username && (
+                                <small className="shared-by-label">
+                                  Podelio: {fajl.shared_by_username}
+                                </small>
                               )}
                             </span>
                           </div>
@@ -1632,7 +2341,24 @@ export default function Dashboard({ korisnik, naOdjavu }) {
 
                             {otvorenMeniFajla === fajl.file_id && (
                               <div className="file-dropdown">
-                                {aktivnaSekcija === "Otpad" ? (
+                                {aktivnaSekcija === "Deljeno sa mnom" ? (
+                                  <>
+                                    <button onClick={() => otvoriFajl(fajl)}>
+                                      Otvori
+                                    </button>
+                                    <button onClick={() => preuzmiFajl(fajl)}>
+                                      Preuzmi
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setFajlZaDetalje(fajl);
+                                        setOtvorenMeniFajla(null);
+                                      }}
+                                    >
+                                      Detalji
+                                    </button>
+                                  </>
+                                ) : aktivnaSekcija === "Otpad" ? (
                                   <>
                                     <button onClick={() => vratiIzOtpada(fajl)}>
                                       Vrati
@@ -1669,7 +2395,7 @@ export default function Dashboard({ korisnik, naOdjavu }) {
                                     >
                                       Preimenuj
                                     </button>
-                                    <button onClick={() => podeliFajl(fajl)}>
+                                    <button onClick={() => otvoriDeljenjeFajla(fajl)}>
                                       Deli
                                     </button>
                                     <button onClick={() => toggleZvezdica(fajl)}>
@@ -1938,6 +2664,442 @@ export default function Dashboard({ korisnik, naOdjavu }) {
                 Zatvori
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {stavkaZaDeljenje && (
+        <div
+          className="share-modal-overlay"
+          onMouseDown={zatvoriDeljenje}
+        >
+          <div
+            className="share-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="share-modal-header">
+              <div>
+                <span className="share-kicker">STORIO DELJENJE</span>
+                <h3>
+                  Deli {stavkaZaDeljenje.tip === "folder" ? "folder" : "fajl"}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                className="share-modal-close"
+                onClick={zatvoriDeljenje}
+                disabled={deljenjeUToku}
+                aria-label="Zatvori"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="share-item-preview">
+              <span
+                className={
+                  stavkaZaDeljenje.tip === "folder"
+                    ? "share-item-icon share-folder-icon"
+                    : "share-item-icon"
+                }
+              >
+                {stavkaZaDeljenje.tip === "folder" ? "▰" : "FILE"}
+              </span>
+
+              <div>
+                <strong>{stavkaZaDeljenje.naziv}</strong>
+                <small>
+                  Pristup dobija samo postojeći Storio korisnik.
+                </small>
+              </div>
+            </div>
+
+            <form onSubmit={podeliNaStorio}>
+              <label className="share-recipient-label">
+                <span>Korisničko ime ili email</span>
+                <input
+                  type="text"
+                  value={primalacDeljenja}
+                  onChange={(e) => {
+                    setPrimalacDeljenja(e.target.value);
+                    setDeljenjeGreska("");
+                    setDeljenjeUspeh("");
+                  }}
+                  placeholder="npr. korisnik ili korisnik@gmail.com"
+                  autoFocus
+                />
+              </label>
+
+              {deljenjeGreska && (
+                <p className="share-message share-error">
+                  {deljenjeGreska}
+                </p>
+              )}
+
+              {deljenjeUspeh && (
+                <p className="share-message share-success">
+                  {deljenjeUspeh}
+                </p>
+              )}
+
+              <div className="share-modal-actions">
+                <button
+                  type="button"
+                  className="share-cancel-btn"
+                  onClick={zatvoriDeljenje}
+                  disabled={deljenjeUToku}
+                >
+                  Poništi
+                </button>
+
+                <button
+                  type="submit"
+                  className="share-submit-btn"
+                  disabled={
+                    deljenjeUToku ||
+                    !primalacDeljenja.trim()
+                  }
+                >
+                  {deljenjeUToku ? "Delim..." : "Podeli"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {prikaziUsernameModal && (
+        <div
+          className="profile-modal-overlay"
+          onMouseDown={() => {
+            if (!profilUToku) {
+              setPrikaziUsernameModal(false);
+              setProfilGreska("");
+            }
+          }}
+        >
+          <div
+            className="profile-username-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <span className="profile-kicker">STORIO PROFIL</span>
+            <h3>Promeni korisničko ime</h3>
+            <p>
+              Novo korisničko ime će se odmah prikazati na tvom nalogu.
+            </p>
+
+            <form onSubmit={sacuvajKorisnickoIme}>
+              <label>
+                <span>Korisničko ime</span>
+                <input
+                  type="text"
+                  value={novoKorisnickoIme}
+                  onChange={(e) => setNovoKorisnickoIme(e.target.value)}
+                  minLength={3}
+                  maxLength={50}
+                  autoFocus
+                />
+              </label>
+
+              {profilGreska && (
+                <p className="profile-error-message">
+                  {profilGreska}
+                </p>
+              )}
+
+              <div className="profile-modal-actions">
+                <button
+                  type="button"
+                  className="profile-modal-cancel"
+                  disabled={profilUToku}
+                  onClick={() => {
+                    setPrikaziUsernameModal(false);
+                    setProfilGreska("");
+                  }}
+                >
+                  Poništi
+                </button>
+
+                <button
+                  type="submit"
+                  className="profile-modal-save"
+                  disabled={
+                    profilUToku ||
+                    novoKorisnickoIme.trim().length < 3
+                  }
+                >
+                  {profilUToku ? "Čuvam..." : "Sačuvaj"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {prikaziPodesavanja && (
+        <div
+          className="settings-overlay"
+          onMouseDown={() => setPrikaziPodesavanja(false)}
+        >
+          <section
+            className="settings-panel"
+            onMouseDown={(e) => e.stopPropagation()}
+            aria-label="Podešavanja"
+          >
+            <div className="settings-header">
+              <div>
+                <span className="settings-kicker">Storio</span>
+                <h2>Podešavanja</h2>
+              </div>
+
+              <button
+                type="button"
+                className="settings-close-btn"
+                aria-label="Zatvori podešavanja"
+                onClick={() => setPrikaziPodesavanja(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="settings-section">
+              <div className="settings-section-heading">
+                <div>
+                  <h3>Izgled</h3>
+                  <p>Izaberi izgled koji ti više odgovara.</p>
+                </div>
+              </div>
+
+              <div className="theme-choice">
+                <button
+                  type="button"
+                  className={`theme-choice-btn ${
+                    tema === "light" ? "active" : ""
+                  }`}
+                  onClick={() => setTema("light")}
+                >
+                  <span className="theme-choice-icon">☀</span>
+                  <span>
+                    <strong>Svetli</strong>
+                    <small>Klasični Storio izgled</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`theme-choice-btn ${
+                    tema === "dark" ? "active" : ""
+                  }`}
+                  onClick={() => setTema("dark")}
+                >
+                  <span className="theme-choice-icon">☾</span>
+                  <span>
+                    <strong>Tamni</strong>
+                    <small>Prijatniji za rad uveče</small>
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="settings-section-heading">
+                <div>
+                  <h3>Nalog</h3>
+                  <p>Podaci trenutno prijavljenog korisnika.</p>
+                </div>
+              </div>
+
+              <div className="account-card">
+                <div className="settings-avatar">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Profilna slika"
+                      className="settings-profile-image"
+                    />
+                  ) : (
+                    avatarSlovo
+                  )}
+                </div>
+
+                <div className="account-card-main">
+                  <strong>
+                    {profil?.username ||
+                      korisnik?.username ||
+                      "Storio korisnik"}
+                  </strong>
+                  <span>
+                    {profil?.email ||
+                      korisnik?.email ||
+                      "Email nije dostupan"}
+                  </span>
+                </div>
+
+                <span className="verified-badge">✓ Verifikovan</span>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="settings-section-heading">
+                <div>
+                  <h3>Storage</h3>
+                  <p>Pregled trenutno zauzetog prostora.</p>
+                </div>
+              </div>
+
+              <div className="settings-storage-card">
+                <div className="settings-storage-numbers">
+                  <strong>{formatVelicine(storage.used_bytes)}</strong>
+                  <span>od {formatVelicine(storage.limit_bytes)}</span>
+                </div>
+
+                <div className="settings-storage-progress">
+                  <div
+                    className="settings-storage-progress-used"
+                    style={{ width: `${procenatStoragea}%` }}
+                  />
+                </div>
+
+                <small>{procenatStoragea.toFixed(1)}% iskorišćeno</small>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="settings-section-heading">
+                <div>
+                  <h3>Bezbednost</h3>
+                  <p>Upravljaj lozinkom i aktivnim prijavama na nalogu.</p>
+                </div>
+              </div>
+
+              <div className="settings-security-actions">
+                <button
+                  type="button"
+                  className="settings-security-btn"
+                  disabled={resetLozinkaUToku || odjavaSvudaUToku}
+                  onClick={posaljiLinkZaPromenuLozinke}
+                >
+                  {resetLozinkaUToku
+                    ? "Šaljem link..."
+                    : "Pošalji link za promenu lozinke"}
+                </button>
+
+                <button
+                  type="button"
+                  className="settings-logout-all-btn"
+                  disabled={resetLozinkaUToku || odjavaSvudaUToku}
+                  onClick={odjaviSaSvihUredjaja}
+                >
+                  {odjavaSvudaUToku
+                    ? "Odjavljujem..."
+                    : "Odjavi me sa svih uređaja"}
+                </button>
+              </div>
+
+              <p className="settings-security-note">
+                Ova opcija prekida sve aktivne Storio sesije i traži novu prijavu.
+              </p>
+
+              {resetLozinkaStatus && (
+                <p className="settings-status-message">
+                  {resetLozinkaStatus}
+                </p>
+              )}
+            </div>
+
+            <div className="settings-section settings-danger-section">
+              <div className="settings-section-heading">
+                <div>
+                  <h3>Opasna zona</h3>
+                  <p>
+                    Brisanje naloga je trajno. Svi tvoji fajlovi, folderi i
+                    podaci biće nepovratno obrisani.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="settings-delete-account-btn"
+                onClick={() => {
+                  setBrisanjeNalogaGreska("");
+                  setPotvrdaBrisanja("");
+                  setPrikaziPodesavanja(false);
+                  setPrikaziBrisanjeNaloga(true);
+                }}
+              >
+                Obriši nalog
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {prikaziBrisanjeNaloga && (
+        <div
+          className="delete-account-overlay"
+          onMouseDown={zatvoriBrisanjeNaloga}
+        >
+          <div
+            className="delete-account-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
+          >
+            <div className="delete-account-icon">!</div>
+
+            <h3 id="delete-account-title">Obriši Storio nalog?</h3>
+
+            <p className="delete-account-warning">
+              Ova radnja se ne može poništiti. Nalog, fajlovi, folderi i svi
+              podaci povezani sa nalogom biće trajno obrisani.
+            </p>
+
+            <form onSubmit={obrisiNalog}>
+              <label className="delete-account-field">
+                <span>Za potvrdu upiši OBRISI</span>
+                <input
+                  type="text"
+                  value={potvrdaBrisanja}
+                  onChange={(e) => setPotvrdaBrisanja(e.target.value)}
+                  placeholder="OBRISI"
+                  autoComplete="off"
+                  autoFocus
+                />
+              </label>
+
+              {brisanjeNalogaGreska && (
+                <p className="delete-account-error">
+                  {brisanjeNalogaGreska}
+                </p>
+              )}
+
+              <div className="delete-account-actions">
+                <button
+                  type="button"
+                  className="delete-account-cancel-btn"
+                  onClick={zatvoriBrisanjeNaloga}
+                  disabled={brisanjeNalogaUToku}
+                >
+                  Otkaži
+                </button>
+
+                <button
+                  type="submit"
+                  className="delete-account-confirm-btn"
+                  disabled={
+                    brisanjeNalogaUToku ||
+                    potvrdaBrisanja.trim() !== "OBRISI"
+                  }
+                >
+                  {brisanjeNalogaUToku
+                    ? "Brišem nalog..."
+                    : "Trajno obriši nalog"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

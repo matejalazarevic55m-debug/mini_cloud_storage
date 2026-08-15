@@ -1,0 +1,294 @@
+/* =========================================================
+   STORIO - DELETE ACCOUNT MODAL
+   Poseban CSS da modal uvek bude centriran iznad cele aplikacije.
+========================================================= */
+
+.delete-account-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+
+  width: 100vw !important;
+  height: 100vh !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  padding: 24px !important;
+  box-sizing: border-box !important;
+
+  background: rgba(13, 15, 21, 0.68) !important;
+  backdrop-filter: blur(7px) !important;
+  -webkit-backdrop-filter: blur(7px) !important;
+}
+
+.delete-account-modal {
+  position: relative !important;
+
+  width: min(460px, calc(100vw - 40px)) !important;
+  max-width: 460px !important;
+
+  margin: 0 !important;
+  padding: 30px !important;
+  box-sizing: border-box !important;
+
+  border: 1px solid #ecd2d5 !important;
+  border-radius: 22px !important;
+
+  background: #ffffff !important;
+  color: #2d2e34 !important;
+
+  box-shadow:
+    0 30px 80px rgba(8, 10, 15, 0.36),
+    0 8px 24px rgba(8, 10, 15, 0.16) !important;
+
+  animation: storio-delete-popup 0.18s ease-out both !important;
+}
+
+@keyframes storio-delete-popup {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.delete-account-icon {
+  width: 54px !important;
+  height: 54px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  margin: 0 0 18px !important;
+
+  border: 1px solid #f0c4c8 !important;
+  border-radius: 16px !important;
+
+  background: #fff0f1 !important;
+  color: #b6414c !important;
+
+  font-size: 25px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+.delete-account-modal h3 {
+  margin: 0 0 10px !important;
+
+  color: #2d2e34 !important;
+
+  font-family: inherit !important;
+  font-size: 23px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.3px !important;
+}
+
+.delete-account-warning {
+  margin: 0 0 24px !important;
+
+  color: #71737c !important;
+
+  font-family: inherit !important;
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+}
+
+.delete-account-field {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+
+  margin: 0 !important;
+}
+
+.delete-account-field span {
+  color: #50525a !important;
+
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+}
+
+.delete-account-field input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+
+  width: 100% !important;
+  min-height: 48px !important;
+
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  box-sizing: border-box !important;
+
+  border: 1px solid #d7d9df !important;
+  border-radius: 12px !important;
+  outline: none !important;
+
+  background: #ffffff !important;
+  color: #2e3036 !important;
+
+  font-family: inherit !important;
+  font-size: 14px !important;
+
+  box-shadow: none !important;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease !important;
+}
+
+.delete-account-field input::placeholder {
+  color: #a9acb4 !important;
+  opacity: 1 !important;
+}
+
+.delete-account-field input:focus {
+  border-color: #c85863 !important;
+  box-shadow: 0 0 0 4px rgba(200, 88, 99, 0.11) !important;
+}
+
+.delete-account-error {
+  margin: 12px 0 0 !important;
+  padding: 11px 13px !important;
+
+  border: 1px solid #efc6ca !important;
+  border-radius: 11px !important;
+
+  background: #fff2f3 !important;
+  color: #a83f49 !important;
+
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+.delete-account-actions {
+  display: grid !important;
+  grid-template-columns: 1fr 1.45fr !important;
+  gap: 11px !important;
+
+  margin-top: 24px !important;
+}
+
+.delete-account-cancel-btn,
+.delete-account-confirm-btn {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+
+  width: 100% !important;
+  min-height: 46px !important;
+
+  margin: 0 !important;
+  padding: 11px 15px !important;
+
+  border-radius: 12px !important;
+
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+
+  cursor: pointer !important;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease !important;
+}
+
+.delete-account-cancel-btn {
+  border: 1px solid #dcdee4 !important;
+  background: #f6f7f9 !important;
+  color: #555760 !important;
+}
+
+.delete-account-cancel-btn:hover:not(:disabled) {
+  background: #eceef2 !important;
+}
+
+.delete-account-confirm-btn {
+  border: 1px solid #b9434e !important;
+  background: #b9434e !important;
+  color: #ffffff !important;
+}
+
+.delete-account-confirm-btn:hover:not(:disabled) {
+  border-color: #a63843 !important;
+  background: #a63843 !important;
+  transform: translateY(-1px) !important;
+}
+
+.delete-account-confirm-btn:disabled,
+.delete-account-cancel-btn:disabled {
+  opacity: 0.48 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* DARK MODE */
+.dashboard-container.dark-mode .delete-account-modal {
+  border-color: #44363b !important;
+  background: #20232a !important;
+  color: #f1f2f5 !important;
+}
+
+.dashboard-container.dark-mode .delete-account-modal h3 {
+  color: #f1f2f5 !important;
+}
+
+.dashboard-container.dark-mode .delete-account-warning,
+.dashboard-container.dark-mode .delete-account-field span {
+  color: #a9adb7 !important;
+}
+
+.dashboard-container.dark-mode .delete-account-icon {
+  border-color: #603a40 !important;
+  background: #302124 !important;
+  color: #ef929b !important;
+}
+
+.dashboard-container.dark-mode .delete-account-field input {
+  border-color: #3c414b !important;
+  background: #292d35 !important;
+  color: #f1f2f5 !important;
+}
+
+.dashboard-container.dark-mode .delete-account-field input::placeholder {
+  color: #747985 !important;
+}
+
+.dashboard-container.dark-mode .delete-account-cancel-btn {
+  border-color: #3d424c !important;
+  background: #292d35 !important;
+  color: #d0d3da !important;
+}
+
+.dashboard-container.dark-mode .delete-account-cancel-btn:hover:not(:disabled) {
+  background: #323740 !important;
+}
+
+.dashboard-container.dark-mode .delete-account-error {
+  border-color: #613a40 !important;
+  background: #302124 !important;
+  color: #ef9ba3 !important;
+}
+
+@media (max-width: 520px) {
+  .delete-account-overlay {
+    padding: 14px !important;
+  }
+
+  .delete-account-modal {
+    width: 100% !important;
+    padding: 24px 20px !important;
+    border-radius: 18px !important;
+  }
+
+  .delete-account-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
