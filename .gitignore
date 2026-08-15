@@ -31,6 +31,3 @@ backend i frontend nov.zip
 .gitignore.save
 random stvari za projekat/
 
-# Lokalni secrets - nikad na Git
-smtp storio token
-StorioDb2026.txt
