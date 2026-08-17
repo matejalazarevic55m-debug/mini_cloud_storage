@@ -24,6 +24,9 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, or_
@@ -118,7 +121,32 @@ UPLOAD_ROOT.mkdir(
 # APP
 # ---------------------------------------------------------
 
+def get_client_ip(request: Request) -> str:
+    # Ako zahtev stiže lokalno preko Cloudflare Tunnel-a,
+    # uzimamo originalnu IP adresu korisnika.
+    if request.client and request.client.host in {"127.0.0.1", "::1"}:
+        cloudflare_ip = request.headers.get("CF-Connecting-IP")
+
+        if cloudflare_ip:
+            return cloudflare_ip.strip()
+
+    return get_remote_address(request)
+
+
+limiter = Limiter(
+    key_func=get_client_ip,
+    storage_uri="memory://",
+)
+
+
 app = FastAPI(title="Storio API")
+
+app.state.limiter = limiter
+
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,
+)
 
 
 # ---------------------------------------------------------
@@ -1315,9 +1343,12 @@ def read_root():
     "/auth/register",
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("5/hour")
 def register_user(
+    request: Request,
     data: RegisterRequest,
     db: Session = Depends(get_db),
+
 ):
     username = data.username.strip()
     email = str(data.email).lower().strip()
@@ -1430,7 +1461,9 @@ def register_user(
 # ---------------------------------------------------------
 
 @app.post("/auth/login")
+@limiter.limit("5/minute")
 def login_user(
+    request: Request,
     data: LoginRequest,
     response: Response,
     db: Session = Depends(get_db),
@@ -2034,7 +2067,9 @@ def verify_email(
 # ---------------------------------------------------------
 
 @app.post("/auth/forgot-password")
+@limiter.limit("3/hour")
 def forgot_password(
+    request: Request,
     data: ForgotPasswordRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -2106,7 +2141,9 @@ def forgot_password(
 # ---------------------------------------------------------
 
 @app.post("/auth/reset-password")
+@limiter.limit("5/minute")
 def reset_password(
+    request: Request,
     data: ResetPasswordRequest,
     db: Session = Depends(get_db),
 ):

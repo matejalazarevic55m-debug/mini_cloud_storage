@@ -11,7 +11,9 @@ class User(Base):
     user_id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    password_hash = Column(String,nullable=True)
+
+    google_sub = Column(String(255),unique=True,index=True,nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Menja se svaki put kada korisnik želi da prekine sve aktivne sesije.

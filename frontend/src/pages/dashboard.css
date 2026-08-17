@@ -6,7 +6,7 @@
   --page-bg: #f5f6fa;
   --content-bg: #ffffff;
   --text-main: #292a30;
-  --text-secondary: #72747c;
+  --text-secondary: hsl(0, 0%, 100%);
   --border-color: #e5e6eb;
 
   width: 100%;
@@ -2071,7 +2071,7 @@
   --page-bg: #111319;
   --content-bg: #1b1e25;
   --text-main: #f1f2f5;
-  --text-secondary: #a5a8b1;
+  --text-secondary: #ffffff;
   --border-color: #30343e;
   --storio-primary-light: #2a2e40;
   --storio-primary-dark: #b8bee2;
@@ -2092,6 +2092,9 @@
   background: #22252d;
   color: #f0f1f4;
   border-color: #343842;
+}
+.dashboard-container.dark-mode .file-dropdown button {
+  color: #e5e7eb;
 }
 
 .dashboard-container.dark-mode .new-dropdown strong,

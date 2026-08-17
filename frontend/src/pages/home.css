@@ -1,10 +1,7 @@
 @font-face {
-    font-family:"font1" ;
-    src: url(../assets/Milkyway\ DEMO.ttf);
+  font-family: "font1";
+  src: url("../assets/Milkyway DEMO.ttf");
 }
-
-
-
 
 *,
 *::before,
@@ -18,252 +15,754 @@ body,
   width: 100%;
   min-height: 100%;
   margin: 0;
-  padding: 0;
 }
 
 body {
-  background: #7e87b7;
-  color: #fff;
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  font-family: Inter, Arial, Helvetica, sans-serif;
 }
 
+/* =========================================================
+   MAIN
+========================================================= */
+
 .home-container {
+  --storio-primary: #7e87b7;
+  --storio-light: #aab0d1;
+  --storio-dark: #626b9b;
+
+  position: relative;
+
   width: 100%;
   min-height: 100vh;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 30px 20px;
-}
-
-.content-wrapper {
-  width: 100%;
+  overflow: hidden;
 
   display: flex;
   flex-direction: column;
+
+  background:
+    linear-gradient(
+      145deg,
+      #727cac 0%,
+      #7e87b7 42%,
+      #8f96c1 100%
+    );
+
+  color: #ffffff;
+}
+
+/* =========================================================
+   BACKGROUND
+========================================================= */
+
+.home-background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.home-grid {
+  position: absolute;
+  inset: 0;
+
+  opacity: 0.08;
+
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.3) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.3) 1px,
+      transparent 1px
+    );
+
+  background-size: 55px 55px;
+
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.8),
+    transparent 85%
+  );
+}
+
+.home-orb {
+  position: absolute;
+  border-radius: 50%;
+
+  filter: blur(2px);
+
+  background: rgba(255, 255, 255, 0.11);
+
+  animation: orbFloat 10s ease-in-out infinite;
+}
+
+.orb-one {
+  width: 420px;
+  height: 420px;
+
+  top: -170px;
+  left: -110px;
+}
+
+.orb-two {
+  width: 520px;
+  height: 520px;
+
+  right: -180px;
+  top: 20%;
+
+  background: rgba(255, 255, 255, 0.07);
+
+  animation-delay: -3s;
+}
+
+.orb-three {
+  width: 280px;
+  height: 280px;
+
+  left: 42%;
+  bottom: -180px;
+
+  background: rgba(255, 255, 255, 0.08);
+
+  animation-delay: -6s;
+}
+
+@keyframes orbFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -25px, 0);
+  }
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.home-header {
+  position: relative;
+  z-index: 10;
+
+  width: 100%;
+
+  display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
 
-  gap: 22px;
-  text-align: center;
+  padding: 28px 48px;
 }
 
-.main-logo-title {
-  margin: 0;
-    font-family: "font1";
-  font-size: 72px;
-  font-weight: 800;
+.home-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.home-brand-mark {
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background: rgba(255, 255, 255, 0.14);
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  color: #ffffff;
+
+  font-family: "font1", sans-serif;
+  font-size: 23px;
+
+  box-shadow:
+    0 8px 25px rgba(45, 49, 75, 0.13);
+}
+
+.home-brand-name {
+  font-family: "font1", sans-serif;
+  font-size: 28px;
   line-height: 1;
-  letter-spacing: -2px;
-}
-
-/* Video zadržava svoju originalnu veličinu */
-.intro-video {
-  display: block;
-
-  width: auto;
-  height: auto;
-
-  max-width: 100%;
-  max-height: 350px;
-
-  object-fit: contain;
-}
-
-/* Dugme */
-.login-button {
-  padding: 14px 45px;
-
-  background: #ffffff;
-  color: #7e87b7;
-
-  border: none;
-  border-radius: 30px;
-
-  font-size: 16px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    background-color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.login-button:hover {
-  background: #d9dbda;
-  transform: scale(1.05);
-}
-
-.footer-text {
-  max-width: 550px;
-  margin: 0;
-    font-family: "font1";
-  color: #d9dbda;
-  font-size: 40px;
-  line-height: 1.5;
-}
-
-@media (max-width: 600px) {
-  .main-logo-title {
-    font-size: 52px;
-  }
-
-  .intro-video {
-    max-height: 250px;
-  }
-
-  .footer-text {
-    font-size: 14px;
-  }
-}
-/* ZADRŽAN TVOJ STIL ZA DUGME I TOOLTIP */
-.help-container {
-  position: fixed;
-  top: 25px;
-  right: 25px;
-  z-index: 100;
-  cursor: pointer;
 }
 
 .help-button {
-  padding: 10px 24px;
-  background: rgba(255, 255, 255, 0.15);
+  min-width: 92px;
+
+  padding: 10px 20px;
+
+  border: 1px solid rgba(255, 255, 255, 0.27);
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.1);
+
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
+
+  font-size: 13px;
+  font-weight: 650;
+
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
-.help-container:hover .help-button {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.7);
-  transform: scale(1.03);
+.help-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+
+  border-color: rgba(255, 255, 255, 0.43);
+
+  transform: translateY(-1px);
 }
 
-.help-tooltip {
-  position: absolute;
-  top: 48px;
-  right: 0;
-  background: #ffffff;
-  border: 1px solid #d9dbda;
-  padding: 15px;
-  border-radius: 12px;
-  width: 240px;
-  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.15);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
-}
+/* =========================================================
+   HERO
+========================================================= */
 
-.help-container:hover .help-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.tooltip-title {
-  margin: 0 0 5px 0;
-  font-weight: bold;
-  font-size: 14px;
-  color: #7e87b7;
-}
-
-.tooltip-text {
-  margin: 0;
-  font-size: 12px;
-  color: #555555;
-  line-height: 1.4;
-  text-align: left;
-}
-
-/* OSTATAK TVOG STAROG CSS-A */
-.home-container {
-  width: 100%;
-  min-height: 100vh;
+.home-hero {
   position: relative;
-}
+  z-index: 2;
 
-.content-wrapper {
-  width: 100%;
-  height: 100vh;
+  flex: 1;
+
+  width: min(1100px, calc(100% - 40px));
+
+  margin: 0 auto;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+
   text-align: center;
-  padding: 0 20px;
+
+  padding: 60px 0 80px;
+
+  animation: heroEnter 0.8s ease-out both;
 }
 
-/* NOVI BOČNI PANEL KOJI SE POJAVLJUJE SA DESNE STRANE */
+@keyframes heroEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-bottom: 26px;
+
+  padding: 8px 14px;
+
+  border: 1px solid rgba(255, 255, 255, 0.19);
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.09);
+
+  color: rgba(255, 255, 255, 0.86);
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+
+  backdrop-filter: blur(12px);
+}
+
+.hero-badge-dot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.1);
+
+  animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.hero-title {
+  max-width: 900px;
+
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: clamp(48px, 6vw, 82px);
+  font-weight: 750;
+  line-height: 1.02;
+
+  letter-spacing: -3.5px;
+}
+
+.hero-title span {
+  display: block;
+
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.hero-description {
+  max-width: 630px;
+
+  margin: 26px auto 0;
+
+  color: rgba(255, 255, 255, 0.75);
+
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.hero-actions {
+  margin-top: 34px;
+}
+
+.login-button {
+  min-width: 175px;
+  min-height: 52px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  padding: 13px 25px;
+
+  border: none;
+  border-radius: 999px;
+
+  background: #ffffff;
+
+  color: #6972a4;
+
+  font-size: 14px;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 15px 35px rgba(54, 58, 88, 0.2);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+
+  background: #f6f6fa;
+
+  box-shadow:
+    0 18px 40px rgba(54, 58, 88, 0.27);
+}
+
+.login-arrow {
+  font-size: 20px;
+
+  transition: transform 0.2s ease;
+}
+
+.login-button:hover .login-arrow {
+  transform: translateX(4px);
+}
+
+/* =========================================================
+   FEATURE CARDS
+========================================================= */
+
+.home-features {
+  width: 100%;
+  max-width: 940px;
+
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+
+  margin-top: 70px;
+}
+
+.feature-card {
+  min-height: 120px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+
+  padding: 20px;
+
+  border: 1px solid rgba(255, 255, 255, 0.13);
+
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.075);
+
+  text-align: left;
+
+  backdrop-filter: blur(13px);
+  -webkit-backdrop-filter: blur(13px);
+
+  transition:
+    transform 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+
+  background: rgba(255, 255, 255, 0.12);
+
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.feature-icon {
+  width: 38px;
+  height: 38px;
+
+  flex: 0 0 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background: rgba(255, 255, 255, 0.14);
+
+  color: #ffffff;
+
+  font-size: 17px;
+}
+
+.feature-card h3 {
+  margin: 2px 0 6px;
+
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.feature-card p {
+  margin: 0;
+
+  color: rgba(255, 255, 255, 0.63);
+
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.home-footer {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  padding: 20px;
+
+  color: rgba(255, 255, 255, 0.45);
+
+  font-size: 10px;
+
+  letter-spacing: 0.04em;
+}
+
+.footer-separator {
+  opacity: 0.5;
+}
+
+/* =========================================================
+   HELP PANEL
+========================================================= */
+
+.help-overlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 9998;
+
+  background: rgba(20, 22, 35, 0.28);
+
+  opacity: 0;
+  visibility: hidden;
+
+  backdrop-filter: blur(3px);
+
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+}
+
+.help-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
 .side-help-panel {
   position: fixed;
+
   top: 0;
-  right: -400px; /* Početno sakriven van ekrana sa desne strane */
-  width: 380px;
+  right: -440px;
+
+  z-index: 9999;
+
+  width: min(410px, 100%);
   height: 100vh;
-  background: #ffffff; /* Beli panel za prelep kontrast sa tvojom plavom pozadinom */
-  color: #333333;
-  box-shadow: -10px 0px 30px rgba(0, 0, 0, 0.2);
-  z-index: 9999; /* Ispred videa i svega na ekranu */
-  padding: 40px 30px;
-  box-sizing: border-box;
-  transition: right 0.4s ease; /* Efekat glatkog uletanja */
+
+  padding: 42px 32px;
+
+  background: #ffffff;
+
+  color: #33343a;
+
+  box-shadow:
+    -18px 0 50px rgba(24, 26, 40, 0.2);
+
+  transition: right 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Klasa koja se aktivira u Reactu na klik i pomera panel na ekran */
 .side-help-panel.open {
   right: 0;
 }
 
-/* Dugme X za zatvaranje panela */
 .close-panel-button {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  background: none;
+
+  top: 22px;
+  right: 22px;
+
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+
   border: none;
-  font-size: 32px;
-  color: #888888;
-  cursor: pointer;
+  border-radius: 50%;
+
+  background: #f2f3f7;
+
+  color: #72747d;
+
+  font-size: 25px;
   line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .close-panel-button:hover {
-  color: #000000;
+  background: #e8e9ef;
+  color: #303138;
 }
 
-/* Sadržaj unutar panela */
 .side-help-content {
-  margin-top: 40px;
-  font-weight: bold;
+  margin-top: 58px;
 }
 
-.side-help-content h2 {
-  font-family:  sans-serif;
-  font-style: italic;
-  font-weight: bold;
-  color: #7e87b7; /* Naslov u boji tvoje teme */
+.help-kicker {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #7e87b7;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.12em;
+}
+
+.side-help-content > h2 {
+  margin: 0 0 14px;
+
+  color: #2e2f35;
+
   font-size: 28px;
-  margin-bottom: 15px;
+  font-weight: 700;
+
+  letter-spacing: -0.6px;
 }
 
-.side-help-content p {
-  font-size: 18px;
-  line-height: 1.6;
-  color: #555555;
+.side-help-content > p {
+  margin: 0 0 32px;
+
+  color: #72747d;
+
+  font-size: 13px;
+  line-height: 1.7;
 }
 
-/* Ostatak tvog koda za logo, video i login dugme ostaje isti... */
-.main-logo-title { margin: 0; font-family: "font1"; font-size: 72px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
-.intro-video { display: block; width: auto; height: auto; max-width: 100%; max-height: 350px; object-fit: contain; }
-.login-button { padding: 14px 45px; background: #ffffff; color: #7e87b7; border: none; border-radius: 30px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease, transform 0.2s ease; }
-.login-button:hover { background: #d9dbda; transform: scale(1.05); }
-.footer-text { max-width: 550px; margin: 0; font-family: "font1"; color: #d9dbda; font-size: 40px; line-height: 1.5; }
+.help-item {
+  display: grid;
+
+  grid-template-columns: 35px 1fr;
+
+  gap: 13px;
+
+  padding: 18px 0;
+
+  border-top: 1px solid #eeeef2;
+}
+
+.help-item > span {
+  color: #7e87b7;
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.help-item strong {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #34353b;
+
+  font-size: 13px;
+}
+
+.help-item p {
+  margin: 0;
+
+  color: #81838b;
+
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 850px) {
+  .home-header {
+    padding: 22px 24px;
+  }
+
+  .home-hero {
+    padding-top: 45px;
+  }
+
+  .home-features {
+    grid-template-columns: 1fr;
+
+    max-width: 520px;
+
+    margin-top: 50px;
+  }
+
+  .feature-card {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-header {
+    padding: 18px;
+  }
+
+  .home-brand-name {
+    font-size: 24px;
+  }
+
+  .home-brand-mark {
+    width: 35px;
+    height: 35px;
+  }
+
+  .help-button {
+    min-width: auto;
+    padding: 9px 15px;
+  }
+
+  .home-hero {
+    width: calc(100% - 32px);
+
+    padding: 45px 0 55px;
+  }
+
+  .hero-title {
+    font-size: 47px;
+    letter-spacing: -2.2px;
+  }
+
+  .hero-description {
+    font-size: 14px;
+  }
+
+  .home-features {
+    margin-top: 45px;
+  }
+
+  .side-help-panel {
+    width: 100%;
+    padding: 34px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-orb,
+  .hero-badge-dot,
+  .home-hero {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
